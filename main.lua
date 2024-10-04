@@ -1,4 +1,4 @@
--- name: Roll The Dice! (RTD)
+-- name: Roll The Dice! V2.0
 -- description: Dpad+Up to ROLL THE DICE for a random buff/debuff/random event!    Mod by TheIncredibleHolc
 
 -- Disclaimer. I have no idea what I'm doing. If you attempt to work on this code, be prepared to cringe as you look through my three-week long endeavor of learning LUA!
