@@ -8,7 +8,7 @@
 audioStream = nil;
 audioSample = nil;
 Threshold = 0
-moontimer = 99999999999999999999999999999999
+moontimer = 0
 E_MODEL_GREEN_DEMON = smlua_model_util_get_id("green_demon_geo")
 E_MODEL_CHEESE_BURGER = smlua_model_util_get_id("cheese_burger_geo")
 E_MODEL_SMILER = smlua_model_util_get_id("smiler_geo")
@@ -48,7 +48,6 @@ alwaysrunningtimer = 0
 Threshold = 50
 welcomeprompt = 0
 sizetimer = 0
-
 
 --------locals--------
 local network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math_floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math_random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence = network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math.floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math.random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence
@@ -126,7 +125,6 @@ function mariobrokenleg (m)
         if (brokenlegtimer) >= 150 then
             brokenleg = 0
             brokenlegtimer = 0
-
         else
             djui_hud_set_resolution(RESOLUTION_N64);
             djui_hud_render_texture(texbrokenleg, 20, 33, .1, .1)
@@ -135,22 +133,29 @@ function mariobrokenleg (m)
     end
 end
 
-function mariobrokenlegjump(m)
-    if m.playerIndex ~= 0 then return end
-    if (brokenleg) == 1 and (m.controller.buttonPressed & A_BUTTON) ~= 0 then
-            audioSample = audio_sample_load("bonebreak.mp3")
-            audio_sample_play(audioSample, gMarioStates[0].pos, 1);
-            set_mario_action(gMarioStates[0], ACT_THROWN_FORWARD, 0)
-    else
+function mariobrokenlegjump()
+    local m = gMarioStates[0]
+    if brokenleg == 1 then
+        if (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_THROWN_FORWARD) or (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_BACKWARD_AIR_KB) then
+            if m.action == ACT_JUMP or m.action == ACT_SIDE_FLIP then
+                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_THROWN_FORWARD, 0)
+            elseif m.action == ACT_BACKFLIP then
+                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
+            end
+        end
     end
 end
 
 function moonclock (m)
-    if moontimer <= 0 then
+    if moontimer == 20 then
+        stop_secondary_music(0)
         set_background_music(0, get_current_background_music(), 0)
-        moontimer = 99999999999999999999999999999999
-    else
-    moontimer = moontimer - 1
+    end
+    if moontimer > 0 then
+        moontimer = moontimer - 1
+        djui_chat_message_create(tostring(moontimer))
     end
 end
 
@@ -243,9 +248,9 @@ function eightsecondcountdown (m)
 end
 
 function on_hud_render(m)
+    local m = gMarioStates[0]
     if rtdtimer == 0 then
-        audioSample = audio_sample_load("rtdready.mp3")
-        audio_sample_play(audioSample, gMarioStates[0].pos, 1);
+        local_play(sRTDready, m.pos, 1)
         djui_hud_set_resolution(RESOLUTION_N64);
         djui_hud_render_texture(texInfo, 20, 24, .2, .2)
         rtdtimer = rtdtimer -1
@@ -289,11 +294,10 @@ function burpfartrtd(m)
     if (m.controller.buttonPressed & U_JPAD) ~= 0 then --ROLL THE DICE!!
         if (rtdtimer) <= 0 then
             if m.playerIndex ~= 0 then return end
-            RandomEvent = math_random(1,30)
+            RandomEvent = math_random(10,10)
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
-                audioSample = audio_sample_load("bonebreak.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1);
-                set_mario_action(gMarioStates[0], ACT_THROWN_FORWARD, 0)
+                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_THROWN_FORWARD, 0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " broke his leg!", 1)
                 brokenlegtimer = 0
                 brokenleg = 1
@@ -303,32 +307,43 @@ function burpfartrtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " went to the moon!", 1)
                 fadeout_music(0)
                 moontimer = 30 * 17
-                audioStream = audio_stream_load("moon.mp3")
-                audio_stream_play(audioStream, true, 1);
-                gMarioStates[0].pos.y = gMarioStates[0].pos.y + 10000
-                gMarioStates[0].pos.y = gMarioStates[0].pos.y + 10000
-                gMarioStates[0].pos.y = gMarioStates[0].pos.y + 10000
+                m.pos.y = m.pos.y + 10
+                play_secondary_music(0,0,0,0)
+                stream_play(moon)
             end
             if (RandomEvent) == 3 then --Mario does a special backflip.(DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " did a sick backflip!", 1)
-                audioSample = audio_sample_load("special.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1);
-                set_mario_action(gMarioStates[0], ACT_BACKFLIP, 0)
+                network_play(sSpecial, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_BACKFLIP, 0)
             end
             if (RandomEvent) == 4 then --Mario gets struck by lightning! (DONE)
                 lightningstrike = 1
+                spawn_sync_object(id_bhvLightning, E_MODEL_LIGHTNING, m.pos.x, m.pos.y + 400, m.pos.z, nil)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got struck by lightning!", 1)
-                audioSample = audio_sample_load("thunder.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1);
-                set_mario_action(gMarioStates[0], ACT_SHOCKED, 0)
+                network_play(sThunder, m.pos, 1, m.playerIndex)
+                local stepResult = perform_air_step(m, 0)
+                if stepResult == AIR_STEP_LANDED then
+                    set_mario_action(gMarioStates[0], ACT_SHOCKED, 0)
+                else
+                    set_mario_action(m, ACT_THROWN_FORWARD, 0)
+                    m.squishTimer = 50
+                end
                 gMarioStates[0].health = gMarioStates[0].health - 1024
+            end
+            if (RandomEvent) == 5 then --Gold and glory! (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " gives RICHES AND GLORY FOR ALL!", 1)
+                for i = 0, 240 do
+                    if m.playerIndex ~= 0 then return end
+                    spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)                end
+                for i = 0, 40 do
+                    if m.playerIndex ~= 0 then return end
+                    spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
+                end
             end
             if (RandomEvent) == 6 then --Mario has to jump in water or he EXPLODES! (DONE)
                 fadeout_music(0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is about to blow up!", 1)
-                audioStream = audio_stream_load("nescastletimerfuse.mp3")
-                audio_stream_set_looping(audioStream, true)
-                audio_stream_play(audioStream, true, 1);
+                stream_play(nescastle)
                 mariofuse = 1
                 eightsecondcount = 1
                 
@@ -336,12 +351,10 @@ function burpfartrtd(m)
             if (RandomEvent) == 7 then --Mario gets sucked into the earth. (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " was sucked into the ground!", 1)
                 set_mario_action(gMarioStates[0], ACT_QUICKSAND_DEATH, 0)
-
             end
             if (RandomEvent) == 8 then --Mario gets a coin jackpot! (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " won the lottery!", 1)
-                audioSample = audio_sample_load("jackpot.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                network_play(sJackpot, m.pos, 1, m.playerIndex)
                 spawn_sync_object(id_bhvMovingYellowCoin, E_MODEL_YELLOW_COIN, m.pos.x + 50, m.pos.y + 100, m.pos.z, nil)
                 spawn_sync_object(id_bhvMovingYellowCoin, E_MODEL_YELLOW_COIN, m.pos.x + 50, m.pos.y + 100, m.pos.z + 50, nil)
                 spawn_sync_object(id_bhvMovingYellowCoin, E_MODEL_YELLOW_COIN, m.pos.x, m.pos.y + 100, m.pos.z + 50, nil)
@@ -366,7 +379,6 @@ function burpfartrtd(m)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x - 50, m.pos.y + 100, m.pos.z - 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x, m.pos.y + 100, m.pos.z - 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x + 50, m.pos.y + 100, m.pos.z - 50, nil)
-
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x + 50, m.pos.y + 200, m.pos.z, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x + 50, m.pos.y + 200, m.pos.z + 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x, m.pos.y + 200, m.pos.z + 50, nil)
@@ -375,21 +387,17 @@ function burpfartrtd(m)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x - 50, m.pos.y + 200, m.pos.z - 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x, m.pos.y + 200, m.pos.z - 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x + 50, m.pos.y + 200, m.pos.z - 50, nil)
-
-
             end
             if (RandomEvent) == 9 then --Mario spawns a cheeseburger, green demon, or 1-up chaser!(DONE)
                 mushroomrandom = math.random(1,3)
                 if (mushroomrandom) == 1 then --Mario gets a 1-up!
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a 1-UP!", 1)
-                    mushroombehavior = 1 --1up
-                    audioSample = audio_sample_load("beetle.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                    local_play(sBeetle, m.pos, 1)
                     if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
                         local obj = spawn_sync_object(
                             id_bhvHidden1upInPole,
                             E_MODEL_1UP,
-                            gMarioStates[0].pos.x, gMarioStates[0].pos.y + 0, gMarioStates[0].pos.z + 0,
+                            gMarioStates[0].pos.x, gMarioStates[0].pos.y + 200, gMarioStates[0].pos.z + 0,
                             function(obj)
                                 obj.oBehParams2ndByte = 2
                                 obj.oAction = 3
@@ -401,14 +409,12 @@ function burpfartrtd(m)
                     mushroombehavior = 2 --Green Demon!
                     fadeout_music(0)
                     play_sound(SOUND_OBJ_BOWSER_LAUGH, gMarioStates[0].marioObj.header.gfx.cameraToObject)
-                    audioStream = audio_stream_load("demonchase.mp3")
-                    audio_stream_set_looping(audioStream, true)
-                    audio_stream_play(audioStream, true, 1);
+                    stream_play(Demon)
                     if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
                         local obj = spawn_non_sync_object(
                         id_bhvHidden1upInPole,
                         E_MODEL_GREEN_DEMON,
-                        gMarioStates[0].pos.x, gMarioStates[0].pos.y + 0, gMarioStates[0].pos.z + 0,
+                        gMarioStates[0].pos.x, gMarioStates[0].pos.y + 200, gMarioStates[0].pos.z + 0,
                         function(obj)
                             obj.oBehParams2ndByte = 2
                             obj.oAction = 3
@@ -418,8 +424,7 @@ function burpfartrtd(m)
                 if (mushroomrandom) == 3 then --Cheeseburger spawns and chases mario for health regen. (DONE)
                     mushroombehavior = 3 --Cheeseburger!
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a cheeseburger!", 1)
-                    audioSample = audio_sample_load("cheeseburger.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                    local_play(sCheeseburger, m.pos, 1)
                     if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
                         local obj = spawn_sync_object(
                         id_bhvHidden1upInPole,
@@ -435,9 +440,7 @@ function burpfartrtd(m)
             if (RandomEvent) == 10 then --Mario gets low gravity!(DONE)
                 lowgravity = 1
                 fadeout_music(0)
-                audioStream = audio_stream_load("metalcap.mp3")
-                audio_stream_set_looping(audioStream, true)
-                audio_stream_play(audioStream, true, 1);
+                stream_play(metalcap)
                 djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " has low gravity!", 1)
                 eightsecondcount = 1
                 RandomEvent = 0
@@ -650,286 +653,7 @@ function burpfartrtd(m)
                 marioasleep = 1
                 RandomEvent = 0
             end
-            if (RandomEvent) == 5 then --Gold and glory! (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " gives RICHES AND GLORY FOR ALL!", 1)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhvThreeCoinsSpawn,E_MODEL_EXCLAMATION_POINT,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
-                
-                
-            end
+
             if (RandomEvent) == 30 then --Spawn a good/bad bob-omb in Marios hands! (DONE)
                 spawnedenemy = math.random(2,3)
                 if (spawnedenemy) == 1 then --Spawn King Bobomb in Marios hand.
@@ -1355,13 +1079,12 @@ function mariowater(m)
             spawn_mist_particles()
             spawn_mist_particles()
             spawn_mist_particles()
-            audioSample = audio_sample_load("cooloff.mp3")
-            audio_sample_play(audioSample, gMarioStates[0].pos, 1);
+            network_play(sCooloff, m.pos, 1, m.playerIndex)
             djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " successfully put out the fuse!", 1)
             fusecounter = 0
             eightsecondtimer = 0
             eightsecondcount = 0
-            audio_stream_stop(audioStream);
+            stream_stop_all()
             set_background_music(0, get_current_background_music(), 0)
             mushroombehavior = 1 --1up
             if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
@@ -1381,6 +1104,7 @@ function mariowater(m)
 end
 
 function mariofusetimer(m)
+    local m = gMarioStates[0]
     if (mariofuse) == 1 then
         fusecounter = fusecounter + 1
         local offsetsmoke = math.random(-75,25)
@@ -1424,12 +1148,11 @@ function mariofusetimer(m)
             djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
         end
             if (fusecounter) == 240 then
-            audioSample = audio_sample_load("nesdeath.mp3")
-            audio_sample_play(audioSample, gMarioStates[0].pos, 1);
+            local_play(sNesdeath, m.pos, 1)
             blowupmario()
             eightsecondtimer = 0
             eightsecondcount = 0
-            audio_stream_stop(audioStream);
+            stream_stop_all()
             --set_background_music(0, get_current_background_music(), 0)
             marioexplodes = 1
             mariofuse = 0
@@ -1532,19 +1255,14 @@ function mushroom_surprise(unloadedObj)
         if (mushroombehavior) == 1 then --1UP
         end
         if (mushroombehavior) == 2 then --GREEN DEMON
-        play_sound(SOUND_MARIO_ATTACKED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
-        obj_explode_and_spawn_coins(0,0)
-        bhv_explosion_init()
-        set_environmental_camera_shake(SHAKE_ENV_EXPLOSION)
-        spawn_mist_particles()
-        spawn_mist_particles()
-        spawn_mist_particles()
-        spawn_mist_particles()
-        spawn_mist_particles()
-        --set_mario_action(gMarioStates[0], ACT_DISAPPEARED, 0)
-        audio_stream_stop(audioStream);
-        set_background_music(0, get_current_background_music(), 0)
-        gMarioStates[0].health = 0xff
+            play_sound(SOUND_MARIO_ATTACKED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
+            obj_explode_and_spawn_coins(0,0)
+            bhv_explosion_init()
+            set_environmental_camera_shake(SHAKE_ENV_EXPLOSION)
+            spawn_mist_particles()
+            stream_stop_all()
+            set_background_music(0, get_current_background_music(), 0)
+            gMarioStates[0].health = 0xff
         end
         if (mushroombehavior) == 3 then --Cheeseburger
             --add health to Mario
@@ -1608,11 +1326,11 @@ function on_sample_play(msg)
     return true;
 end
 
-function enderpearl()
+function teleporting()
 	local m = gMarioStates[0]
     local s = gStateExtras[0]
 
-	if not s.enderpearl then
+	if not s.enderpearl and moontimer <= 0 then
 		curpos = {
 			x = m.pos.x,
 			y = m.pos.y,
@@ -1620,7 +1338,13 @@ function enderpearl()
 		}
 	end
 
-    if s.enderpearl then
+    if moontimer > 500 and vec3f_dist(curpos, m.pos) < 1000 then --Send Mario to the damn moon.
+        set_mario_action(m, ACT_JUMP, 0)
+        m.pos.y = m.floorHeight
+        m.pos.y = m.pos.y + 30000
+    end
+
+    if s.enderpearl then --Teleport Mario to a random spot within 40,000 units. 
         if vec3f_dist(curpos, m.pos) < 1000 then
                 marx = math.random(-19500,19500)
                 mary = math.random(0,4400)
@@ -1635,11 +1359,16 @@ function enderpearl()
     end
 end
 
-hook_event(HOOK_UPDATE, enderpearl)
+function on_warp()
+    stream_stop_all()
+end
+
 
 
 
 --------Hooks--------
+hook_event(HOOK_UPDATE, teleporting)
+hook_event(HOOK_ON_WARP, on_warp)
 hook_event(HOOK_ON_HUD_RENDER, welcome)
 hook_event(HOOK_MARIO_UPDATE, mariosize)
 hook_event(HOOK_ON_HUD_RENDER, mariosizetimer)
