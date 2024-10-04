@@ -1,4 +1,4 @@
--- name: Roll The Dice! V2.0
+-- name: Roll The Dice! V2.0 [WIP]
 -- description: Dpad+Up to ROLL THE DICE for a random buff/debuff/random event!    Mod by TheIncredibleHolc
 
 -- Disclaimer. I have no idea what I'm doing. If you attempt to work on this code, be prepared to cringe as you look through my three-week long endeavor of learning LUA!
@@ -294,7 +294,7 @@ function burpfartrtd(m)
     if (m.controller.buttonPressed & U_JPAD) ~= 0 then --ROLL THE DICE!!
         if (rtdtimer) <= 0 then
             if m.playerIndex ~= 0 then return end
-            RandomEvent = math_random(10,10)
+            RandomEvent = math_random(1,27)
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
@@ -447,8 +447,7 @@ function burpfartrtd(m)
             end
             if (RandomEvent) == 11 then --Goompacalypse!! (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a Goompacalypse!", 1)
-                audioSample = audio_sample_load("homer.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                local_play(sHomer, m.pos, 1)
 
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z,nil)
@@ -490,18 +489,14 @@ function burpfartrtd(m)
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
             end
-            if (RandomEvent) == 12 then --Mario gets a star! (Needs work? softlocks when star "leave area" is turned on in game options)
+            if (RandomEvent) == 12 then --You get nothing! You lose! Good day sir!
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled nothing!", 1)
             end
-            if (RandomEvent) == 13 then --Bully spawns and plays Halo elite sound (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a BIG bully!", 1)
-                audioSample = audio_sample_load("elite1.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+            if (RandomEvent) == 13 then --Bully spawns! (DONE)
                 spawn_sync_object(id_bhvBigBully,E_MODEL_BULLY_BOSS,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
             end
             if (RandomEvent) == 14 then --Mario gets MOONJUMP!(DONE)
-                audioSample = audio_sample_load("moonjump.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                local_play(sMoonjump, m.pos, 1)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got MOON JUMP!", 1)
                 moonjump = 1
                 RandomEvent = 0
@@ -509,10 +504,18 @@ function burpfartrtd(m)
             end
             if (RandomEvent) == 15 then --Mario freaks out and throws his cap. Regenerates cap if no cap. (DONE)
                 if m.flags & MARIO_CAP_ON_HEAD ~= 0 then
-                    audioSample = audio_sample_load("angrymario.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                    if m.character.type == CT_MARIO then
+                        network_play(sAngrymario, m.pos, 1, m.playerIndex)
+                    elseif m.character.type == CT_LUIGI then
+                        network_play(sAngryluigi, m.pos, 1, m.playerIndex)
+                    elseif m.character.type == CT_TOAD then
+                        network_play(sAngrytoad, m.pos, 1, m.playerIndex)
+                    elseif m.character.type == CT_WALUIGI then
+                        network_play(sAngrywaluigi, m.pos, 1, m.playerIndex)
+                    elseif m.character.type == CT_WARIO then
+                        network_play(sAngrywario, m.pos, 1, m.playerIndex)
+                    end
                     cutscene_take_cap_off(m)
-                    --set_mario_action(m, ACT_SHIVERING, 1) --Not bad, but not the best imo.
                     set_mario_action(m, ACT_HOLD_FREEFALL_LAND, 1)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " threw their cap in a fit of RAGE!", 1)
                     angrymario = 1
@@ -535,126 +538,28 @@ function burpfartrtd(m)
                 local s = gStateExtras[0]
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " used an Ender Pearl!", 1)
                 s.enderpearl = true
-                audioSample = audio_sample_load("teleport.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-
+                network_play(sTeleport, m.pos, 1, m.playerIndex)
             end
             if (RandomEvent) == 18 then --Mario gets koopa shell! (DONE)
-                audioSample = audio_sample_load("success.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                local_play(sSuccess, m.pos, 1)
                 spawn_sync_object(id_bhvKoopaShell,E_MODEL_KOOPA_SHELL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a koopa shell!", 1)
             end
             if (RandomEvent) == 19 then --Mario breaks it down! (DONE)
                 fadeout_music(0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is showing their moves!", 1)
-                audioStream = audio_stream_load("mariodance.mp3")
-                audio_stream_set_looping(audioStream, true)
-                audio_stream_play(audioStream, true, 1);
+                stream_play(dance)
                 set_mario_action(m, ACT_PUNCHING, 9) --breakdance
                 mariospin = 1
             end
             if (RandomEvent) == 20 then --8 seconds of SPEED! (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled super speed!", 1)
                 fadeout_music(3)
-                audioStream = audio_stream_load("betterthangold.mp3")
-                audio_stream_set_looping(audioStream, true)
-                audio_stream_play(audioStream, true, 1);
+                stream_play(gold)
                 marioboostrtd = 1
                 eightsecondcount = 1
             end
-            if (RandomEvent) == 21 then --Fake quicksand death! (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got sucked into the ground!", 1)
-
-                set_mario_action(m, ACT_QUICKSAND_DEATH, 0)
-                quicksandfake = 1
-                --set_mario_action(m, ACT_TELEPORT_FADE_IN, 0)
-            end
-            if (RandomEvent) == 22 then --Free random cap! (DONE)
-                randomcap = math.random(1,4)
-                if (randomcap) == 1 then --metal cap
-                    audioSample = audio_sample_load("success.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                    spawn_sync_object(id_bhvMetalCap,E_MODEL_MARIOS_METAL_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a metal cap!", 1)
-                end
-                if (randomcap) == 2 then --wing cap
-                    audioSample = audio_sample_load("success.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                    spawn_sync_object(id_bhvWingCap,E_MODEL_MARIOS_WING_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a wing cap!", 1)
-                end
-                if (randomcap) == 3 then --vanish cap
-                    audioSample = audio_sample_load("success.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                    spawn_sync_object(id_bhvVanishCap,E_MODEL_MARIOS_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a vanish cap!", 1)
-                end
-                if (randomcap) == 4 then --all caps
-                    audioSample = audio_sample_load("success.mp3")
-                    audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                    spawn_sync_object(id_bhvVanishCap,E_MODEL_MARIOS_CAP,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                    spawn_sync_object(id_bhvWingCap,E_MODEL_MARIOS_WING_CAP,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                    spawn_sync_object(id_bhvMetalCap,E_MODEL_MARIOS_METAL_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got ALL 3 CAPS!", 1)
-                end
-            end
-            if (RandomEvent) == 23 then --Mario gets CANNON'ed! (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a cannon!", 1)
-                vec = {x=0,y=0,z=0}            
-                cannon = spawn_sync_object(id_bhvCannon, E_MODEL_NONE, m.pos.x, m.pos.y, m.pos.z,
-                function (obj)
-                    obj.oBehParams = obj.oBehParams | 1
-                    obj.oBehParams2ndByte = 2
-                    obj.oAction = 3
-                end)
-                vec3f_copy(vec, m.pos)
-            end
-            if (RandomEvent) == 24 then --Mario gets a troll face that blocks view for 8 seconds(DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is getting trolled!", 1)
-                audioSample = audio_sample_load("troll.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                blind = 1
-                fivesecondcount = 1
-                RandomEvent = 0
-            end
-            if (RandomEvent) == 25 then --Clusterbomb! Spawn explosions everywhere. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " dropped a cluster bomb!", 1)
-                audioSample = audio_sample_load("ka.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                clusterbomb = 1
-            end
-            if (RandomEvent) == 26 then --Mario becomes a random enemy. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled no effect!", 1)
-            end
-            if (RandomEvent) == 27 then --Mega fart shockwave. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " unleashed a fart shockwave!", 1)
-                audioSample = audio_sample_load("fart5.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
-                spawn_mist_particles()
-                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z,nil)
-                RandomEvent = 0
-            end
-            if (RandomEvent) == 28 then --Makes red exclamation box appear, trolls with random effect instead. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a random-box!", 1)
-
-                thwompcoordx = gMarioStates[0].pos.x + 300
-                thwompcoordy = gMarioStates[0].pos.y + 300
-                thwompcoordz = gMarioStates[0].pos.z + 300
-                thwompfakebox = spawn_sync_object(id_bhvExclamationBox,E_MODEL_EXCLAMATION_BOX,thwompcoordx,thwompcoordy,thwompcoordz,nil)
-                thwomptroll = 1
-                RandomEvent = 0
-            end
-            if (RandomEvent) == 29 then --Mario falls asleep for 5 seconds. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
-                play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
-                mariosleepcounter = 0
-                fivesecondcount = 1
-                marioasleep = 1
-                RandomEvent = 0
-            end
-
-            if (RandomEvent) == 30 then --Spawn a good/bad bob-omb in Marios hands! (DONE)
+            if (RandomEvent) == 21 then --Spawn a good/bad bob-omb in Marios hands! (DONE)
                 spawnedenemy = math.random(2,3)
                 if (spawnedenemy) == 1 then --Spawn King Bobomb in Marios hand.
                     djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " picked up KING BOBOMB!", 1)
@@ -707,11 +612,94 @@ function burpfartrtd(m)
                     set_mario_action(m, ACT_HOLD_IDLE, 0)
                 end
             end
+            if (RandomEvent) == 22 then --Free random cap! (DONE)
+                randomcap = math.random(1,4)
+                if (randomcap) == 1 then --metal cap
+                    local_play(sSuccess, m.pos, 1)
+                    spawn_sync_object(id_bhvMetalCap,E_MODEL_MARIOS_METAL_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a metal cap!", 1)
+                end
+                if (randomcap) == 2 then --wing cap
+                    local_play(sSuccess, m.pos, 1)
+                    spawn_sync_object(id_bhvWingCap,E_MODEL_MARIOS_WING_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a wing cap!", 1)
+                end
+                if (randomcap) == 3 then --vanish cap
+                    local_play(sSuccess, m.pos, 1)
+                    spawn_sync_object(id_bhvVanishCap,E_MODEL_MARIOS_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a vanish cap!", 1)
+                end
+                if (randomcap) == 4 then --all caps
+                    local_play(sSuccess, m.pos, 1)
+                    spawn_sync_object(id_bhvVanishCap,E_MODEL_MARIOS_CAP,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
+                    spawn_sync_object(id_bhvWingCap,E_MODEL_MARIOS_WING_CAP,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvMetalCap,E_MODEL_MARIOS_METAL_CAP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got ALL 3 CAPS!", 1)
+                end
+            end
+            if (RandomEvent) == 23 then --Mario gets CANNON'ed! (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a cannon!", 1)
+                vec = {x=0,y=0,z=0}            
+                cannon = spawn_sync_object(id_bhvCannon, E_MODEL_NONE, m.pos.x, m.pos.y, m.pos.z,
+                function (obj)
+                    obj.oBehParams = obj.oBehParams | 1
+                    obj.oBehParams2ndByte = 2
+                    obj.oAction = 3
+                end)
+                vec3f_copy(vec, m.pos)
+            end
+            if (RandomEvent) == 24 then --Mario gets a troll face that blocks view for 8 seconds(DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is getting trolled!", 1)
+                local_play(sTroll, m.pos, 1)
+                blind = 1
+                fivesecondcount = 1
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 25 then --Clusterbomb! Spawn explosions everywhere. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " dropped a cluster bomb!", 1)
+                network_play(sKa, m.pos, 1, m.playerIndex)
+                clusterbomb = 1
+            end
+            if (RandomEvent) == 26 then --Mario becomes a random enemy. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled no effect!", 1)
+            end
+            if (RandomEvent) == 27 then --Mega fart shockwave. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " unleashed a fart shockwave!", 1)
+                network_play(sFart, m.pos, 1, m.playerIndex)
+                spawn_mist_particles()
+                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z,nil)
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 28 then --Mario falls asleep for 5 seconds. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
+                play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
+                mariosleepcounter = 0
+                fivesecondcount = 1
+                marioasleep = 1
+                RandomEvent = 0
+            end
+            --[[ --These are pretty lame tbh. Taking them out for now. 
+            if (RandomEvent) == 29 then --Makes red exclamation box appear, trolls with random effect instead. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a random-box!", 1)
+
+                thwompcoordx = gMarioStates[0].pos.x + 300
+                thwompcoordy = gMarioStates[0].pos.y + 300
+                thwompcoordz = gMarioStates[0].pos.z + 300
+                thwompfakebox = spawn_sync_object(id_bhvExclamationBox,E_MODEL_EXCLAMATION_BOX,thwompcoordx,thwompcoordy,thwompcoordz,nil)
+                thwomptroll = 1
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 30 then --Fake quicksand death! (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got sucked into the ground!", 1)
+                set_mario_action(m, ACT_QUICKSAND_DEATH, 0)
+                quicksandfake = 1
+                --set_mario_action(m, ACT_TELEPORT_FADE_IN, 0)
+            end
+            ]]
 
             rtdtimer = 30 * 10
         else
-            audioSample = audio_sample_load("nope.mp3")
-            audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+            local_play(sNope, m.pos, 1)
         end
     end
 
@@ -887,9 +875,12 @@ function globalhook(m)
         quicksandfake = 0
     end
     if (lowgravity) == 1 then
-        if (m.action & ACT_FLAG_AIR) ~= 0 then
-            m.vel.y = m.vel.y + 1.5
+        if (m.action & ACT_FLAG_AIR) ~= 0 and m.action ~= ACT_LONG_JUMP then
+            m.vel.y = m.vel.y + 2.5
         end
+        if m.action == ACT_LONG_JUMP then
+            m.vel.y = m.vel.y + 1.5
+        end 
     end
 end
 
@@ -905,7 +896,7 @@ function survivequicksand(m)
 end
 
 function clusterbombs(m)
-    
+    local m = gMarioStates[0]
     if (clusterbomb) == 1 then --starts the timer for the jumping and ground pound
         clusterbombtimer2 = clusterbombtimer2 + 1 
     end
@@ -932,8 +923,7 @@ function clusterbombs(m)
     end
 
     if (clusterbombtimer) == 30 then --Plays the "boom!" after butt pound, which forces the number to 28. (Can clean up, was just testing things.)
-        audioSample = audio_sample_load("boom.mp3")
-        audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+        network_play(sBoom, m.pos, 1, m.playerIndex)
     end
 
     if (clusterbombexplosions) == 1 then --Initiates the counter for the actual exploisions.
@@ -956,7 +946,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 100, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 100, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 100, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 38 then
+    if (clusterbombtimer) == 35 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 300, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 300, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 300, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -971,7 +961,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 300, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 300, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 300, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 46 then
+    if (clusterbombtimer) == 40 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 500, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 500, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 500, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -986,7 +976,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 500, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 500, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 500, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 54 then
+    if (clusterbombtimer) == 45 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 700, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 700, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 700, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -1001,7 +991,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 700, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 700, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 700, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 62 then
+    if (clusterbombtimer) == 50 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 1200, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 1200, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 1200, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -1016,7 +1006,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 1200, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 1200, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 1200, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 70 then
+    if (clusterbombtimer) == 55 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 1500, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 1500, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 1500, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -1031,7 +1021,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 1500, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 1500, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 1500, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 78 then
+    if (clusterbombtimer) == 60 then
         --top right, right, bottom right explosions
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 2000, gMarioStates[0].pos.y, gMarioStates[0].pos.z  + 2000, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x + 2000, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
@@ -1046,7 +1036,7 @@ function clusterbombs(m)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 2000, gMarioStates[0].pos.y, gMarioStates[0].pos.z, function (exp) exp.oBehParams = 20 end)
         spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, gMarioStates[0].pos.x - 2000, gMarioStates[0].pos.y, gMarioStates[0].pos.z  - 2000, function (exp) exp.oBehParams = 20 end)
     end
-    if (clusterbombtimer) == 79 then
+    if (clusterbombtimer) == 65 then
         clusterbomb = 0
         clusterbombexplosions = 0
         clusterbombtimer = 0
@@ -1179,7 +1169,7 @@ function marioboost(m)
         speedcounter = 0
         eightsecondtimer = 0
         eightsecondcount = 0
-        audio_stream_stop(audioStream);
+        stream_stop_all()
         set_background_music(0, get_current_background_music(), 0)
     end
 end
@@ -1196,9 +1186,6 @@ function mariospinning(m)
     if (mariospin) == 1 then
         if (speeen) == 30 then
             set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            --set_mario_action(m, ACT_BUTT_STUCK_IN_GROUND, 0) --Funny
-            --set_mario_action(m, MARIO_ANIM_WATER_STAR_DANCE,0) --Creepy
-            --set_mario_action(m, ACT_FREEFALL_LAND_STOP, 0)
             nospeen = nospeen + 1
         end
         if (speeen) == 60 then
@@ -1219,16 +1206,13 @@ function mariospinning(m)
         end
         if (speeen) == 180 then
             set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            --set_mario_action(m, ACT_BUTT_STUCK_IN_GROUND, 0) --Funny
-            --set_mario_action(m, MARIO_ANIM_WATER_STAR_DANCE,0) --Creepy
-            --set_mario_action(m, ACT_FREEFALL_LAND_STOP, 0)
             nospeen = nospeen + 1
         end
         if (nospeen) == 6 then
             nospeen = 0
             speeen = 0
             mariospin = 0
-            audio_stream_stop(audioStream);
+            stream_stop_all()
             set_background_music(0, get_current_background_music(), 0)
         end
     end

@@ -18,6 +18,8 @@ function stream_stop_all()
 	audio_stream_stop(nescastle)
 	audio_stream_stop(Demon)
 	audio_stream_stop(metalcap)
+	audio_stream_stop(dance)
+	audio_stream_stop(gold)
 	currentlyPlaying = nil
 end
 
@@ -84,6 +86,20 @@ gSamples = {
 	audio_sample_load("jackpot.mp3"),
 	audio_sample_load("beetle.mp3"),
 	audio_sample_load("cheeseburger.mp3"),
+	audio_sample_load("homer.mp3"),
+	audio_sample_load("moonjump.mp3"),
+	audio_sample_load("angrymario.ogg"),
+	audio_sample_load("angryluigi.ogg"),
+	audio_sample_load("angrytoad.ogg"),
+	audio_sample_load("angrywaluigi.ogg"),
+	audio_sample_load("angrywario.ogg"),
+	audio_sample_load("teleport.mp3"),
+	audio_sample_load("success.mp3"),
+	audio_sample_load("troll.mp3"),
+	audio_sample_load("ka.mp3"),
+	audio_sample_load("boom.mp3"),
+	audio_sample_load("fart5.mp3"),
+	audio_sample_load("nope.mp3")
 }
 
 sBoneBreak = 1
@@ -95,12 +111,28 @@ sNesdeath = 6
 sJackpot = 7
 sBeetle = 8
 sCheeseburger = 9
+sHomer = 10
+sMoonjump = 11
+sAngrymario = 12
+sAngryluigi = 13
+sAngrytoad = 14
+sAngrywaluigi = 15
+sAngrywario = 16
+sTeleport = 17
+sSuccess = 18
+sTroll = 19
+sKa = 20
+sBoom = 21
+sFart = 22
+sNope = 23
 
 --Streams
 moon = audio_stream_load("moon.mp3")
 nescastle = audio_stream_load("nescastletimerfuse.mp3")     loop(nescastle)
 Demon = audio_stream_load("demonchase.mp3")                 loop(Demon)
 metalcap = audio_stream_load("metalcap.mp3")
+dance = audio_stream_load("mariodance.mp3")
+gold = audio_stream_load("betterthangold.mp3")
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 -------- Helper Functions
