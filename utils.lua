@@ -16,7 +16,6 @@ end
 function stream_stop_all()
 	audio_stream_stop(moon)
 	audio_stream_stop(nescastle)
-	audio_stream_stop(Demon)
 	audio_stream_stop(metalcap)
 	audio_stream_stop(dance)
 	audio_stream_stop(gold)
@@ -77,29 +76,35 @@ end)
 
 --Samples
 gSamples = {
-	audio_sample_load("bonebreak.mp3"),
-	audio_sample_load("rtdready.mp3"),
-	audio_sample_load("special.mp3"),
-	audio_sample_load("thunder.mp3"),
-	audio_sample_load("cooloff.mp3"),
-	audio_sample_load("nesdeath.mp3"),
-	audio_sample_load("jackpot.mp3"),
-	audio_sample_load("beetle.mp3"),
-	audio_sample_load("cheeseburger.mp3"),
-	audio_sample_load("homer.mp3"),
-	audio_sample_load("moonjump.mp3"),
+	audio_sample_load("bonebreak.ogg"),
+	audio_sample_load("rtdready.ogg"),
+	audio_sample_load("special.ogg"),
+	audio_sample_load("thunder.ogg"),
+	audio_sample_load("cooloff.ogg"),
+	audio_sample_load("nesdeath.ogg"),
+	audio_sample_load("jackpot.ogg"),
+	audio_sample_load("beetle.ogg"),
+	audio_sample_load("cheeseburger.ogg"),
+	audio_sample_load("homer.ogg"),
+	audio_sample_load("moonjump.ogg"),
 	audio_sample_load("angrymario.ogg"),
 	audio_sample_load("angryluigi.ogg"),
 	audio_sample_load("angrytoad.ogg"),
 	audio_sample_load("angrywaluigi.ogg"),
 	audio_sample_load("angrywario.ogg"),
-	audio_sample_load("teleport.mp3"),
-	audio_sample_load("success.mp3"),
-	audio_sample_load("troll.mp3"),
-	audio_sample_load("ka.mp3"),
-	audio_sample_load("boom.mp3"),
-	audio_sample_load("fart5.mp3"),
-	audio_sample_load("nope.mp3")
+	audio_sample_load("teleport.ogg"),
+	audio_sample_load("success.ogg"),
+	audio_sample_load("troll.ogg"),
+	audio_sample_load("ka.ogg"),
+	audio_sample_load("boom.ogg"),
+	audio_sample_load("fart5.ogg"),
+	audio_sample_load("nope.ogg"),
+	audio_sample_load("nicebobomb1.ogg"),
+	audio_sample_load("nicebobomb2.ogg"),
+	audio_sample_load("nicebobomb3.ogg"),
+	audio_sample_load("bobomb1.ogg"),
+	audio_sample_load("bobomb2.ogg"),
+	audio_sample_load("bobomb3.ogg")
 }
 
 sBoneBreak = 1
@@ -125,14 +130,19 @@ sKa = 20
 sBoom = 21
 sFart = 22
 sNope = 23
+sGoodbobomb1 = 24
+sGoodbobomb2 = 25
+sGoodbobomb3 = 26
+sBobomb1 = 27
+sBobomb2 = 28
+sBobomb3 = 29
 
 --Streams
-moon = audio_stream_load("moon.mp3")
-nescastle = audio_stream_load("nescastletimerfuse.mp3")     loop(nescastle)
-Demon = audio_stream_load("demonchase.mp3")                 loop(Demon)
-metalcap = audio_stream_load("metalcap.mp3")
-dance = audio_stream_load("mariodance.mp3")
-gold = audio_stream_load("betterthangold.mp3")
+moon = audio_stream_load("moon.ogg")
+nescastle = audio_stream_load("nescastletimerfuse.ogg")     loop(nescastle)
+metalcap = audio_stream_load("metalcap.ogg")
+dance = audio_stream_load("mariodance.ogg")
+gold = audio_stream_load("betterthangold.ogg")
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 -------- Helper Functions

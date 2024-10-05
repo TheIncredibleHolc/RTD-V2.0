@@ -5,8 +5,6 @@
 -- Still, I hope you enjoy it for what it is, and you're welcome to message me on Discord for questions or recommendations! -TheIncredibleHolc
 
 ------Variables n' stuff------
-audioStream = nil;
-audioSample = nil;
 Threshold = 0
 moontimer = 0
 E_MODEL_GREEN_DEMON = smlua_model_util_get_id("green_demon_geo")
@@ -32,7 +30,6 @@ speedcounter = 0
 m = gMarioStates[0]
 quicksandtimer = 0
 quicksandfake = 0
-audioStream = audio_stream_load("silent.mp3")
 mariofusetime = 0
 fusecounter = 0
 marioexplodes = 0
@@ -94,10 +91,6 @@ function RTDclock (m)
     rtdtimer = rtdtimer - 1
 end
 
-function stopcustommusic(m)
-    audio_stream_stop(audioStream);
-end
-
 function madmario (m)
     if (angrymario) == 1 then
         if (angrycounter) == 50 then
@@ -155,7 +148,6 @@ function moonclock (m)
     end
     if moontimer > 0 then
         moontimer = moontimer - 1
-        djui_chat_message_create(tostring(moontimer))
     end
 end
 
@@ -238,7 +230,6 @@ function eightsecondcountdown (m)
         if (eightsecondtimer) == 270 then
             eightsecondtimer = 0
             eightsecondcount = 0
-            audio_stream_stop(audioStream);
             set_background_music(0, get_current_background_music(), 0)
             if (lowgravity) == 1 then
                 lowgravity = 0
@@ -294,7 +285,7 @@ function burpfartrtd(m)
     if (m.controller.buttonPressed & U_JPAD) ~= 0 then --ROLL THE DICE!!
         if (rtdtimer) <= 0 then
             if m.playerIndex ~= 0 then return end
-            RandomEvent = math_random(1,27)
+            RandomEvent = math_random(23,23)
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
@@ -409,7 +400,6 @@ function burpfartrtd(m)
                     mushroombehavior = 2 --Green Demon!
                     fadeout_music(0)
                     play_sound(SOUND_OBJ_BOWSER_LAUGH, gMarioStates[0].marioObj.header.gfx.cameraToObject)
-                    stream_play(Demon)
                     if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
                         local obj = spawn_non_sync_object(
                         id_bhvHidden1upInPole,
@@ -521,12 +511,9 @@ function burpfartrtd(m)
                     angrymario = 1
                 else
                     save_file_clear_flags(SAVE_FLAG_CAP_ON_GROUND | SAVE_FLAG_CAP_ON_KLEPTO | SAVE_FLAG_CAP_ON_UKIKI | SAVE_FLAG_CAP_ON_MR_BLIZZARD)
-                    --mario_retrieve_cap(m)
                     cutscene_put_cap_on(gMarioStates[0])
                     set_mario_action(m, ACT_PUTTING_ON_CAP, 1)
                     m.cap = m.cap & ~(SAVE_FLAG_CAP_ON_GROUND | SAVE_FLAG_CAP_ON_KLEPTO | SAVE_FLAG_CAP_ON_UKIKI | SAVE_FLAG_CAP_ON_MR_BLIZZARD)
-                    --audioSample = audio_sample_load("itemget.mp3")
-                    --audio_sample_play(audioSample, gMarioStates[0].pos, 1)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " found a replacement cap!", 1)
                 end
             end
@@ -570,16 +557,13 @@ function burpfartrtd(m)
                     djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " picked up a friendly bob-omb!", 1)
                     bobombcomm = math.random(1,3)
                     if (bobombcomm) == 1 then
-                        audioSample = audio_sample_load("nicebobomb1.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sGoodbobomb1, m.pos, 1, m.playerIndex)
                     end
                     if (bobombcomm) == 2 then
-                        audioSample = audio_sample_load("nicebobomb2.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sGoodbobomb2, m.pos, 1, m.playerIndex)
                     end
                     if (bobombcomm) == 3 then
-                        audioSample = audio_sample_load("nicebobomb3.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sGoodbobomb3, m.pos, 1, m.playerIndex)
                     end
                     spawnedenemybhv = id_bhvBobomb
                     spawnedenemymodel = E_MODEL_BOBOMB_BUDDY
@@ -588,16 +572,13 @@ function burpfartrtd(m)
                     djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " picked up an evil bob-omb!", 1)
                     bobombcomm = math.random(1,3)
                     if (bobombcomm) == 1 then
-                        audioSample = audio_sample_load("bobomb1.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sBobomb1, m.pos, 1, m.playerIndex)
                     end
                     if (bobombcomm) == 2 then
-                        audioSample = audio_sample_load("bobomb2.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sBobomb2, m.pos, 1, m.playerIndex)
                     end
                     if (bobombcomm) == 3 then
-                        audioSample = audio_sample_load("bobomb3.mp3")
-                        audio_sample_play(audioSample, gMarioStates[0].pos, 1) 
+                        network_play(sBobomb3, m.pos, 1, m.playerIndex)
                     end
                     spawnedenemybhv = id_bhvBobomb
                     spawnedenemymodel = E_MODEL_BLACK_BOBOMB
@@ -764,8 +745,7 @@ function thwomptrollfunc(m)
                 spawn_sync_object(id_bhvExplosion,E_MODEL_EXPLOSION,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
             end
             if (randombox) == 4 then --free koopa shell
-                audioSample = audio_sample_load("success.mp3")
-                audio_sample_play(audioSample, gMarioStates[0].pos, 1)
+                network_play(sSuccess, m.pos, 1, m.playerIndex)
                 spawn_sync_object(id_bhvKoopaShell,E_MODEL_KOOPA_SHELL,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
             end
             if (randombox) == 5 then --turns into bobomb
@@ -774,43 +754,6 @@ function thwomptrollfunc(m)
             thwomptroll = 0
         end
     end
-end
-
-function randommariochangetimer(m)
-    if (alwaysrunning) == 1 then
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texchange, 20, 33, .1, .1)
-        alwaysrunningtimer = alwaysrunningtimer + 1
-    end
-    if (alwaysrunningtimer) == 240 then
-        alwaysrunningtimer = 0
-        alwaysrunning = 0
-    end
-end
-
-function randommariochange(m)
-    if m.playerIndex ~= 0 then return end
-    if (alwaysrunning) == 1 then
-        if (randommario) == 1 then
-            obj_set_model_extended(m.marioObj, E_MODEL_GOOMBA)
-        end
-        if (randommario) == 2 then
-            obj_set_model_extended(m.marioObj, E_MODEL_KOOPA_WITH_SHELL)
-        end
-        if (randommario) == 3 then
-            obj_set_model_extended(m.marioObj, E_MODEL_THWOMP)
-        end
-        if (randommario) == 4 then
-            obj_set_model_extended(m.marioObj, E_MODEL_PENGUIN)
-        end
-        if (randommario) == 5 then
-            --obj_set_model_extended(m.marioObj, E_MODEL_DORRIE)
-            obj_set_model_extended(m.marioObj, E_MODEL_UKIKI)
-            
-        end
-    end
-
-
 end
 
 function blindness(m)
@@ -851,9 +794,9 @@ function bhv_custom_cannon_loop(o)
     if m.playerIndex ~= 0 then return end
     local m = nearest_mario_state_to_object(o)
     if m.action == ACT_SHOT_FROM_CANNON and o.parentObj.oBehParams & 0xFF ~= 0 then
-        audioSample = audio_sample_load("explode.mp3")
-        audio_sample_play(audioSample, vec, 1)
-        cannon = obj_explode_and_spawn_coins(10, 10)
+        play_sound(SOUND_GENERAL2_BOBOMB_EXPLOSION, m.pos)
+        obj_spawn_yellow_coins(o, 3)
+        obj_explode_and_spawn_coins(10, 10)
         obj_mark_for_deletion(o.parentObj)
     end
 end
@@ -865,8 +808,6 @@ function globalhook(m)
         quicksandtimer = quicksandtimer + 1
     end
     if (quicksandtimer) == 62 then
-        audioSample = audio_sample_load("dirtexplosion.mp3")
-        audio_sample_play(audioSample, gMarioStates[0].pos, 1)
         spawn_mist_particles()
         quicksandtimer = quicksandtimer + 1
     end
@@ -1258,58 +1199,6 @@ function mushroom_surprise(unloadedObj)
     end
 end
 
-function on_stream_play(msg)
-    if(msg == "load") then
-        audioStream = audio_stream_load("music.mp3")
-        audio_stream_set_looping(audioStream, true)
-        djui_chat_message_create("audio audioStream:" .. tostring(audioStream));
-    end
-
-    if(msg == "play") then
-        audio_stream_play(audioStream, true, 1);
-        djui_chat_message_create("playing audio");
-    end
-
-    if(msg == "resume") then
-        audio_stream_play(audioStream, false, 1);
-        djui_chat_message_create("resuming audio");
-    end
-
-    if(msg == "pause") then
-        audio_stream_pause(audioStream);
-        djui_chat_message_create("pausing audio");
-    end
-
-    if(msg == "stop") then
-        audio_stream_stop(audioStream);
-        djui_chat_message_create("stopping audio");
-    end
-
-    if(msg == "destroy") then
-        audio_stream_destroy(audioStream);
-        djui_chat_message_create("destroyed audio");
-    end
-
-    if(msg == "getpos") then
-        djui_chat_message_create("pos: " .. tostring(audio_stream_get_position(audioStream)));
-    end
-
-    return true;
-end
-
-function on_sample_play(msg)
-    if(msg == "load") then
-        audioSample = audio_sample_load("fart.mp3");
-
-        djui_chat_message_create("audio audioStream:" .. tostring(audioSample));
-
-        return true;
-    end
-
-    audio_sample_play(audioSample, gMarioStates[0].pos, 1);
-    return true;
-end
-
 function teleporting()
 	local m = gMarioStates[0]
     local s = gStateExtras[0]
@@ -1358,8 +1247,6 @@ hook_event(HOOK_MARIO_UPDATE, mariosize)
 hook_event(HOOK_ON_HUD_RENDER, mariosizetimer)
 hook_event(HOOK_ON_HUD_RENDER, mariosleeping)
 hook_event(HOOK_MARIO_UPDATE, thwomptrollfunc)
-hook_event(HOOK_ON_HUD_RENDER, randommariochangetimer)
-hook_event(HOOK_MARIO_UPDATE, randommariochange)
 hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
 hook_event(HOOK_ON_HUD_RENDER, blindness)
 hook_event(HOOK_MARIO_UPDATE, moonjumping)
@@ -1373,7 +1260,6 @@ hook_event(HOOK_ON_HUD_RENDER, mariofusetimer)
 hook_event(HOOK_ON_HUD_RENDER, marioboost)
 hook_event(HOOK_ON_HUD_RENDER, mariospincounter)
 hook_event(HOOK_ON_HUD_RENDER, mariospinning)
-hook_event(HOOK_ON_WARP, stopcustommusic)
 hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
 hook_event(HOOK_MARIO_UPDATE, burpfartrtd)
 hook_event(HOOK_ON_HUD_RENDER, madmario)
@@ -1387,8 +1273,6 @@ hook_event(HOOK_ON_HUD_RENDER, on_hud_render)
 hook_event(HOOK_ON_HUD_RENDER, RTDclock)
 hook_event(HOOK_ON_HUD_RENDER, moonclock)
 hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
-hook_chat_command('stream', "[load|play|resume|pause|stop|destroy|getpos]", on_stream_play)
-hook_chat_command('sample', "[load|play]", on_sample_play)
 
 
 
