@@ -28,11 +28,8 @@ nospeen = 0
 marioboostrtd = 0
 speedcounter = 0
 m = gMarioStates[0]
-quicksandtimer = 0
-quicksandfake = 0
 mariofusetime = 0
 fusecounter = 0
-marioexplodes = 0
 moonjumpcount = 0
 blind = 0
 blindcounter = 0
@@ -74,43 +71,8 @@ local texwelcome = get_texture_info('welcome')
 
 --------functions--------
 
-function welcome(m)
-    if (welcomeprompt) == 1 then       
-        local m = gMarioStates[0]
-        if m.marioObj.oTimer >= 150 or (gMarioStates[0].controller.buttonPressed & U_JPAD) ~= 0 then
-            welcomeprompt = 0
-        end
-    end
-    if (welcomeprompt) == 1 then
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texwelcome, 105, 14, .4, .4)
-    end
-end
-
 function RTDclock (m)
     rtdtimer = rtdtimer - 1
-end
-
-function madmario (m)
-    if (angrymario) == 1 then
-        if (angrycounter) == 50 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 1)
-            angrycounter = angrycounter + 1
-        else
-            angrycounter = angrycounter + 1
-        end
-
-        if (angrycounter) >=55 then
-            cutscene_put_cap_on(gMarioStates[0])
-            mario_blow_off_cap(gMarioStates[0], 300)
-            save_file_clear_flags(SAVE_FLAG_CAP_ON_GROUND | SAVE_FLAG_CAP_ON_KLEPTO | SAVE_FLAG_CAP_ON_UKIKI | SAVE_FLAG_CAP_ON_MR_BLIZZARD)
-            angrycounter = 0
-            RandomEvent = 0
-            angrymario = 0
-            --set_mario_action(m, MARIO_CAPS, 0)
-            
-        end
-    end
 end
 
 function mariobrokenleg (m)
@@ -122,21 +84,6 @@ function mariobrokenleg (m)
             djui_hud_set_resolution(RESOLUTION_N64);
             djui_hud_render_texture(texbrokenleg, 20, 33, .1, .1)
             brokenlegtimer = brokenlegtimer + 1
-        end
-    end
-end
-
-function mariobrokenlegjump()
-    local m = gMarioStates[0]
-    if brokenleg == 1 then
-        if (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_THROWN_FORWARD) or (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_BACKWARD_AIR_KB) then
-            if m.action == ACT_JUMP or m.action == ACT_SIDE_FLIP then
-                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
-                set_mario_action(m, ACT_THROWN_FORWARD, 0)
-            elseif m.action == ACT_BACKFLIP then
-                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
-                set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
-            end
         end
     end
 end
@@ -267,25 +214,12 @@ function randomizehealth (m)
     end
 end
 
-function lightning(m)
-    if (lightningstrike) == 1 then
-        if (lightningcounter) >= 1 then
-            lightningstrike = 0
-            lightningcounter = 0
-        else
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texlightning, 0, 0, 1.1, 1.1)
-            lightningcounter = lightningcounter + 1
-        end
-    end
-end
-
-function burpfartrtd(m)
+function rtd(m)
     if m.playerIndex ~= 0 then return end
     if (m.controller.buttonPressed & U_JPAD) ~= 0 then --ROLL THE DICE!!
         if (rtdtimer) <= 0 then
             if m.playerIndex ~= 0 then return end
-            RandomEvent = math_random(23,23)
+            RandomEvent = math_random(6,6)
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
@@ -334,7 +268,8 @@ function burpfartrtd(m)
             if (RandomEvent) == 6 then --Mario has to jump in water or he EXPLODES! (DONE)
                 fadeout_music(0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is about to blow up!", 1)
-                stream_play(nescastle)
+                network_play(sNEScastle, m.pos, 1, m.playerIndex)
+                play_secondary_music(0,0,0,0)
                 mariofuse = 1
                 eightsecondcount = 1
                 
@@ -641,8 +576,13 @@ function burpfartrtd(m)
                 network_play(sKa, m.pos, 1, m.playerIndex)
                 clusterbomb = 1
             end
-            if (RandomEvent) == 26 then --Mario becomes a random enemy. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled no effect!", 1)
+            if (RandomEvent) == 26 then --Mario falls asleep for 5 seconds. (DONE)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
+                play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
+                mariosleepcounter = 0
+                fivesecondcount = 1
+                marioasleep = 1
+                RandomEvent = 0
             end
             if (RandomEvent) == 27 then --Mega fart shockwave. (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " unleashed a fart shockwave!", 1)
@@ -651,32 +591,7 @@ function burpfartrtd(m)
                 spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z,nil)
                 RandomEvent = 0
             end
-            if (RandomEvent) == 28 then --Mario falls asleep for 5 seconds. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
-                play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
-                mariosleepcounter = 0
-                fivesecondcount = 1
-                marioasleep = 1
-                RandomEvent = 0
-            end
-            --[[ --These are pretty lame tbh. Taking them out for now. 
-            if (RandomEvent) == 29 then --Makes red exclamation box appear, trolls with random effect instead. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a random-box!", 1)
 
-                thwompcoordx = gMarioStates[0].pos.x + 300
-                thwompcoordy = gMarioStates[0].pos.y + 300
-                thwompcoordz = gMarioStates[0].pos.z + 300
-                thwompfakebox = spawn_sync_object(id_bhvExclamationBox,E_MODEL_EXCLAMATION_BOX,thwompcoordx,thwompcoordy,thwompcoordz,nil)
-                thwomptroll = 1
-                RandomEvent = 0
-            end
-            if (RandomEvent) == 30 then --Fake quicksand death! (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got sucked into the ground!", 1)
-                set_mario_action(m, ACT_QUICKSAND_DEATH, 0)
-                quicksandfake = 1
-                --set_mario_action(m, ACT_TELEPORT_FADE_IN, 0)
-            end
-            ]]
 
             rtdtimer = 30 * 10
         else
@@ -684,110 +599,6 @@ function burpfartrtd(m)
         end
     end
 
-end
-
-function mariosize (m)
-    if (randomsize) == 1 then       
-        if (sizetimer) >= 1 and (sizetimer) <= 6 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.5,0.5,0.5)
-        end
-        if (sizetimer) <= 14 and (sizetimer) >=7 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.7,0.7,0.7)
-        end
-        if (sizetimer) >= 15 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.3,0.3,0.3)
-        end
-    end
-
-
-
-
-end
-
-function mariosizetimer (m)
-
-    if (randomsize) == 1 then
-        sizetimer = sizetimer + 1
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texshrunk, 31, 33, .1, .1)
-    end
-    if (sizetimer) == 240 then
-        sizetimer = 0
-        randomsize = 0
-    end
-end
-
-function mariosleeping (m)
-    if (marioasleep) == 1 then
-        mariosleepcounter = mariosleepcounter + 1
-        set_mario_action(gMarioStates[0], ACT_SLEEPING, 1)
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texsleep, 31, 33, .1, .1)
-    end
-    if (mariosleepcounter) == 150 then
-        mariosleepcounter = 0
-        marioasleep = 0
-    end
-end
-
-function thwomptrollfunc(m)
-    if (thwomptroll) == 1 then
-        if mario_is_within_rectangle(thwompcoordx - 50, thwompcoordx + 50, thwompcoordz - 50, thwompcoordz + 50) ~= 0 then
-            obj_mark_for_deletion(thwompfakebox)
-            randombox = math.random(1,5)
-            if (randombox) == 1 then --acts like a goomba
-                spawn_sync_object(id_bhvGoomba,E_MODEL_EXCLAMATION_BOX,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
-            end
-            if (randombox) == 2 then --turns into homing amp
-                spawn_sync_object(id_bhvHomingAmp,E_MODEL_AMP,thwompcoordx,thwompcoordy - 150,thwompcoordz,nil)
-            end
-            if (randombox) == 3 then --explodes lol
-                spawn_sync_object(id_bhvExplosion,E_MODEL_EXPLOSION,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
-            end
-            if (randombox) == 4 then --free koopa shell
-                network_play(sSuccess, m.pos, 1, m.playerIndex)
-                spawn_sync_object(id_bhvKoopaShell,E_MODEL_KOOPA_SHELL,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
-            end
-            if (randombox) == 5 then --turns into bobomb
-                spawn_sync_object(id_bhvBobomb,E_MODEL_EXCLAMATION_BOX,thwompcoordx,thwompcoordy - 50,thwompcoordz,nil)
-            end
-            thwomptroll = 0
-        end
-    end
-end
-
-function blindness(m)
-    if (blind) == 1 then
-        blindcounter = blindcounter + 1
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(textroll, -20, -50, .9, .7)
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(textrollhud, 20, 33, .1, .1)
-    end
-    if (blindcounter) == 150 then
-        blindcounter = 0
-        blind = 0
-    end
-end
-
-function moonjumping(m)
-    if (moonjump) == 1 then
-        if (m.controller.buttonDown & A_BUTTON) ~= 0 then --If the A button is pressed
-            m.vel.y = 25 --Set Y velocity to 25
-        end
-    end
-end
-
-function moonjumptimer(m)
-    if (moonjump) == 1 then
-        moonjumpcount = moonjumpcount + 1
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texmoonjump, 20, 33, .1, .1)
-    end
-    if (moonjumpcount) == 240 then
-        moonjumpcount = 0
-        moonjump = 0
-    end
 end
 
 function bhv_custom_cannon_loop(o)
@@ -798,41 +609,6 @@ function bhv_custom_cannon_loop(o)
         obj_spawn_yellow_coins(o, 3)
         obj_explode_and_spawn_coins(10, 10)
         obj_mark_for_deletion(o.parentObj)
-    end
-end
-
-function globalhook(m)
-    if (quicksandtimer) == 50 then
-        set_mario_action(gMarioStates[0], ACT_EMERGE_FROM_PIPE, 0)
-        soft_reset_camera(gMarioStates[0].area.camera)
-        quicksandtimer = quicksandtimer + 1
-    end
-    if (quicksandtimer) == 62 then
-        spawn_mist_particles()
-        quicksandtimer = quicksandtimer + 1
-    end
-    if (quicksandtimer) == 90 then
-        quicksandtimer = 0
-        quicksandfake = 0
-    end
-    if (lowgravity) == 1 then
-        if (m.action & ACT_FLAG_AIR) ~= 0 and m.action ~= ACT_LONG_JUMP then
-            m.vel.y = m.vel.y + 2.5
-        end
-        if m.action == ACT_LONG_JUMP then
-            m.vel.y = m.vel.y + 1.5
-        end 
-    end
-end
-
-function survivequicksand(m)
-    if (quicksandfake) == 1 then
-       quicksandtimer = quicksandtimer + 1
-        if (quicksandtimer) == 20 then
-            set_mario_action(gMarioStates[0], ACT_BUTT_STUCK_IN_GROUND, 0)
-            quicksandtimer = quicksandtimer + 1
-       end
-
     end
 end
 
@@ -985,179 +761,7 @@ function clusterbombs(m)
     end
 end
 
-function blowupmario(m)
-    if (marioexplodes) == 1 then
-        --bhv_explosion_init()
-        --set_environmental_camera_shake(SHAKE_ENV_EXPLOSION)
-        --set_mario_action(m, ACT_DISAPPEARED, 0)
-        --obj_explode_and_spawn_coins(1,1)
-        spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, m.pos.x, m.pos.y, m.pos.z, nil)
-        --level_trigger_warp(m, WARP_OP_DEATH)
-        --m.health = 0xff
-        marioexplodes = 0
-    end
 
-end
-
-function mariowater(m)
-    if (mariofuse) == 1 then
-        if m.playerIndex ~= 0 then return end
-        --if (m.action & ACT_GROUP_MASK) == ACT_GROUP_SUBMERGED then
-        mariotouchingwater = m.pos.y <= m.waterLevel
-        if (mariotouchingwater) then
-            spawn_mist_particles()
-            spawn_mist_particles()
-            spawn_mist_particles()
-            spawn_mist_particles()
-            spawn_mist_particles()
-            network_play(sCooloff, m.pos, 1, m.playerIndex)
-            djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " successfully put out the fuse!", 1)
-            fusecounter = 0
-            eightsecondtimer = 0
-            eightsecondcount = 0
-            stream_stop_all()
-            set_background_music(0, get_current_background_music(), 0)
-            mushroombehavior = 1 --1up
-            if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
-                local obj = spawn_sync_object(
-                    id_bhvHidden1upInPole,
-                    E_MODEL_1UP,
-                    gMarioStates[0].pos.x, gMarioStates[0].pos.y + 0, gMarioStates[0].pos.z + 0,
-                    function(obj)
-                        obj.oBehParams2ndByte = 2
-                        obj.oAction = 3
-                    end)
-            end
-            mariofuse = 0
-
-        end
-    end
-end
-
-function mariofusetimer(m)
-    local m = gMarioStates[0]
-    if (mariofuse) == 1 then
-        fusecounter = fusecounter + 1
-        local offsetsmoke = math.random(-75,25)
-        spawn_sync_object(id_bhvBobombFuseSmoke, E_MODEL_SMOKE, gMarioStates[0].pos.x + offsetsmoke, gMarioStates[0].pos.y - 100, gMarioStates[0].pos.z, nil)
-    cur_obj_play_sound_1(SOUND_AIR_BOBOMB_LIT_FUSE)
-    end
-    if (mariotouchingwater) then
-
-    else
-        if (fusecounter) > 0 and (fusecounter) < 30 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
-            
-        end
-        if (fusecounter) >= 30 and (fusecounter) < 60 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 60 and (fusecounter) < 90 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 90 and (fusecounter) < 120 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 120 and (fusecounter) < 150 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 150 and (fusecounter) < 180 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 180 and (fusecounter) < 210 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
-        end
-        if (fusecounter) >= 210 and (fusecounter) < 240 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
-        end
-            if (fusecounter) == 240 then
-            local_play(sNesdeath, m.pos, 1)
-            blowupmario()
-            eightsecondtimer = 0
-            eightsecondcount = 0
-            stream_stop_all()
-            --set_background_music(0, get_current_background_music(), 0)
-            marioexplodes = 1
-            mariofuse = 0
-            fusecounter = 0
-        end
-    end
-end
-
-function marioboost(m)
-    local m = gMarioStates[0]
-    if (marioboostrtd) == 1 then
-        --if m.action ~= ACT_JUMP or m.action ~= ACT_DOUBLE_JUMP or m.action ~= ACT_TRIPLE_JUMP or m.action ~= ACT_LONG_JUMP or m.action ~= ACT_DIVE or m.action ~= ACT_SIDE_FLIP or m.action ~= ACT_SLIDE_KICK then
-        if m.action == ACT_WALKING or m.action == ACT_LONG_JUMP then
-            m.forwardVel = 140
-        end  
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texspeed, 20, 33, .1, .1)
-    end
-    if (marioboostrtd) == 1 then
-        speedcounter = speedcounter + 1
-    end
-    if (speedcounter) == 240 then
-        marioboostrtd = 0
-        speedcounter = 0
-        eightsecondtimer = 0
-        eightsecondcount = 0
-        stream_stop_all()
-        set_background_music(0, get_current_background_music(), 0)
-    end
-end
-
-function mariospincounter(m)
-    if (mariospin) == 1 then
-        speeen = speeen + 1
-        gMarioStates[0].faceAngle.y = gMarioStates[0].faceAngle.y + 3550
-        gMarioStates[0].forwardVel = 0
-    end
-end
-
-function mariospinning(m)
-    if (mariospin) == 1 then
-        if (speeen) == 30 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (speeen) == 60 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (speeen) == 90 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (speeen) == 120 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (speeen) == 150 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (speeen) == 180 then
-            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-            nospeen = nospeen + 1
-        end
-        if (nospeen) == 6 then
-            nospeen = 0
-            speeen = 0
-            mariospin = 0
-            stream_stop_all()
-            set_background_music(0, get_current_background_music(), 0)
-        end
-    end
-end
 
 function findcap(unloadedcap)
     nearestcap = nearest_mario_state_to_object(unloadedcap)
@@ -1236,37 +840,318 @@ function on_warp()
     stream_stop_all()
 end
 
+function mario_update(m)
+    local m = gMarioStates[0]
 
+    --Moon jumping
+    if (moonjump) == 1 then
+        if (m.controller.buttonDown & A_BUTTON) ~= 0 then
+            m.vel.y = 25
+        end
+    end
+
+    --Low gravity
+    if (lowgravity) == 1 then
+        if (m.action & ACT_FLAG_AIR) ~= 0 and m.action ~= ACT_LONG_JUMP then
+            m.vel.y = m.vel.y + 2.5
+        end
+        if m.action == ACT_LONG_JUMP then
+            m.vel.y = m.vel.y + 1.5
+        end 
+    end
+
+    --Mario Broken Leg
+    if brokenleg == 1 then
+        if (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_THROWN_FORWARD) or (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_BACKWARD_AIR_KB) then
+            if m.action == ACT_JUMP or m.action == ACT_SIDE_FLIP then
+                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_THROWN_FORWARD, 0)
+            elseif m.action == ACT_BACKFLIP then
+                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
+            end
+        end
+    end
+
+    --Mario Size
+    if (randomsize) == 1 then
+        if (sizetimer) >= 1 and (sizetimer) <= 6 then
+            vec3f_set(m.marioObj.header.gfx.scale,0.5,0.5,0.5)
+        end
+        if (sizetimer) <= 14 and (sizetimer) >=7 then
+            vec3f_set(m.marioObj.header.gfx.scale,0.7,0.7,0.7)
+        end
+        if (sizetimer) >= 15 then
+            vec3f_set(m.marioObj.header.gfx.scale,0.3,0.3,0.3)
+        end
+    end
+
+    --Mario defusing in water
+    if (mariofuse) == 1 then
+        if m.playerIndex ~= 0 then return end
+        mariotouchingwater = m.pos.y <= m.waterLevel
+        if (mariotouchingwater) then
+            spawn_mist_particles()
+            spawn_mist_particles()
+            spawn_mist_particles()
+            spawn_mist_particles()
+            spawn_mist_particles()
+            djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " successfully put out the fuse!", 1)
+            fusecounter = 0
+            eightsecondtimer = 0
+            eightsecondcount = 0
+            stop_all_samples()
+            network_play(sCooloff, m.pos, 1, m.playerIndex)
+            stop_secondary_music(0)
+            set_background_music(0, get_current_background_music(), 0)
+            mushroombehavior = 1 --1up
+            if not (obj_get_first_with_behavior_id(id_bhvActSelector) ~= nil) then
+                local obj = spawn_sync_object(
+                    id_bhvHidden1upInPole,
+                    E_MODEL_1UP,
+                    gMarioStates[0].pos.x, gMarioStates[0].pos.y + 0, gMarioStates[0].pos.z + 0,
+                    function(obj)
+                        obj.oBehParams2ndByte = 2
+                        obj.oAction = 3
+                    end)
+            end
+            mariofuse = 0
+
+        end
+    end
+
+    --Mario Spinning
+    if (mariospin) == 1 then
+        if (speeen) == 30 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (speeen) == 60 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (speeen) == 90 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (speeen) == 120 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (speeen) == 150 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (speeen) == 180 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+        end
+        if (nospeen) == 6 then
+            nospeen = 0
+            speeen = 0
+            mariospin = 0
+            stream_stop_all()
+            set_background_music(0, get_current_background_music(), 0)
+        end
+    end
+
+end
+
+function hud_timers()
+    local m = gMarioStates[0]
+
+    --Welcome prompt
+    if (welcomeprompt) == 1 then
+        if m.marioObj.oTimer >= 150 or (gMarioStates[0].controller.buttonPressed & U_JPAD) ~= 0 then
+            welcomeprompt = 0
+        end
+    end
+    if (welcomeprompt) == 1 then
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(texwelcome, 105, 14, .4, .4)
+    end
+
+    --Mario Size Timer
+    if (randomsize) == 1 then
+        sizetimer = sizetimer + 1
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(texshrunk, 31, 33, .1, .1)
+    end
+    if (sizetimer) == 240 then
+        sizetimer = 0
+        randomsize = 0
+    end
+
+    --Mario Sleeping
+    if (marioasleep) == 1 then
+        mariosleepcounter = mariosleepcounter + 1
+        set_mario_action(gMarioStates[0], ACT_SLEEPING, 1)
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(texsleep, 31, 33, .1, .1)
+    end
+    if (mariosleepcounter) == 150 then
+        mariosleepcounter = 0
+        marioasleep = 0
+    end
+
+    --Blindness
+    if (blind) == 1 then
+        blindcounter = blindcounter + 1
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(textroll, -20, -50, .9, .7)
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(textrollhud, 20, 33, .1, .1)
+    end
+    if (blindcounter) == 150 then
+        blindcounter = 0
+        blind = 0
+    end
+
+    --Moon Jump Timer
+    if (moonjump) == 1 then
+        moonjumpcount = moonjumpcount + 1
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(texmoonjump, 20, 33, .1, .1)
+    end
+    if (moonjumpcount) == 240 then
+        moonjumpcount = 0
+        moonjump = 0
+    end
+
+    --Mario Fuse Timer
+    if (mariofuse) == 1 then
+        fusecounter = fusecounter + 1
+        local offsetsmoke = math.random(-75,25)
+        spawn_sync_object(id_bhvBobombFuseSmoke, E_MODEL_SMOKE, gMarioStates[0].pos.x + offsetsmoke, gMarioStates[0].pos.y - 100, gMarioStates[0].pos.z, nil)
+        cur_obj_play_sound_1(SOUND_AIR_BOBOMB_LIT_FUSE)
+    end
+    if (mariotouchingwater) then
+
+    else
+        if (fusecounter) > 0 and (fusecounter) < 30 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
+            
+        end
+        if (fusecounter) >= 30 and (fusecounter) < 60 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 60 and (fusecounter) < 90 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 90 and (fusecounter) < 120 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 120 and (fusecounter) < 150 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 150 and (fusecounter) < 180 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 180 and (fusecounter) < 210 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
+        end
+        if (fusecounter) >= 210 and (fusecounter) < 240 then
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texexplosion2, 20, 33, .1, .1)
+        end
+            if (fusecounter) == 240 then
+            network_play(sNesdeath, m.pos, 1, m.playerIndex)
+            spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, m.pos.x, m.pos.y, m.pos.z, nil)
+            stop_secondary_music(0)
+            eightsecondtimer = 0
+            eightsecondcount = 0
+            stream_stop_all()
+            --set_background_music(0, get_current_background_music(), 0)
+            mariofuse = 0
+            fusecounter = 0
+        end
+    end
+
+    --Mario Boost Timer
+    if (marioboostrtd) == 1 then
+        --if m.action ~= ACT_JUMP or m.action ~= ACT_DOUBLE_JUMP or m.action ~= ACT_TRIPLE_JUMP or m.action ~= ACT_LONG_JUMP or m.action ~= ACT_DIVE or m.action ~= ACT_SIDE_FLIP or m.action ~= ACT_SLIDE_KICK then
+        if m.action == ACT_WALKING or m.action == ACT_LONG_JUMP then
+            m.forwardVel = 140
+        end  
+        djui_hud_set_resolution(RESOLUTION_N64);
+        djui_hud_render_texture(texspeed, 20, 33, .1, .1)
+    end
+    if (marioboostrtd) == 1 then
+        speedcounter = speedcounter + 1
+    end
+    if (speedcounter) == 240 then
+        marioboostrtd = 0
+        speedcounter = 0
+        eightsecondtimer = 0
+        eightsecondcount = 0
+        stream_stop_all()
+        set_background_music(0, get_current_background_music(), 0)
+    end
+
+    --Mario Spin Timer
+    if (mariospin) == 1 then
+        speeen = speeen + 1
+        gMarioStates[0].faceAngle.y = gMarioStates[0].faceAngle.y + 3550
+        gMarioStates[0].forwardVel = 0
+    end
+
+    --Lightning effect
+    if (lightningstrike) == 1 then
+        if (lightningcounter) >= 1 then
+            lightningstrike = 0
+            lightningcounter = 0
+        else
+            djui_hud_set_resolution(RESOLUTION_N64);
+            djui_hud_render_texture(texlightning, 0, 0, 1.1, 1.1)
+            lightningcounter = lightningcounter + 1
+        end
+    end
+
+    --Mario Angry Throwing Cap
+    if (angrymario) == 1 then
+        if (angrycounter) == 50 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 1)
+            angrycounter = angrycounter + 1
+        else
+            angrycounter = angrycounter + 1
+        end
+
+        if (angrycounter) >=55 then
+            cutscene_put_cap_on(gMarioStates[0])
+            mario_blow_off_cap(gMarioStates[0], 300)
+            save_file_clear_flags(SAVE_FLAG_CAP_ON_GROUND | SAVE_FLAG_CAP_ON_KLEPTO | SAVE_FLAG_CAP_ON_UKIKI | SAVE_FLAG_CAP_ON_MR_BLIZZARD)
+            angrycounter = 0
+            RandomEvent = 0
+            angrymario = 0
+            --set_mario_action(m, MARIO_CAPS, 0)
+            
+        end
+    end
+
+
+    
+end
 
 
 --------Hooks--------
+
+hook_event(HOOK_MARIO_UPDATE, mario_update)
+hook_event(HOOK_ON_HUD_RENDER, hud_timers)
 hook_event(HOOK_UPDATE, teleporting)
 hook_event(HOOK_ON_WARP, on_warp)
-hook_event(HOOK_ON_HUD_RENDER, welcome)
-hook_event(HOOK_MARIO_UPDATE, mariosize)
-hook_event(HOOK_ON_HUD_RENDER, mariosizetimer)
-hook_event(HOOK_ON_HUD_RENDER, mariosleeping)
-hook_event(HOOK_MARIO_UPDATE, thwomptrollfunc)
 hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
-hook_event(HOOK_ON_HUD_RENDER, blindness)
-hook_event(HOOK_MARIO_UPDATE, moonjumping)
-hook_event(HOOK_ON_HUD_RENDER, moonjumptimer)
 hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
-hook_event(HOOK_MARIO_UPDATE, globalhook)
-hook_event(HOOK_ON_HUD_RENDER, survivequicksand)
-hook_event(HOOK_MARIO_UPDATE, blowupmario)
-hook_event(HOOK_MARIO_UPDATE, mariowater)
-hook_event(HOOK_ON_HUD_RENDER, mariofusetimer)
-hook_event(HOOK_ON_HUD_RENDER, marioboost)
-hook_event(HOOK_ON_HUD_RENDER, mariospincounter)
-hook_event(HOOK_ON_HUD_RENDER, mariospinning)
 hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
-hook_event(HOOK_MARIO_UPDATE, burpfartrtd)
-hook_event(HOOK_ON_HUD_RENDER, madmario)
-hook_event(HOOK_ON_HUD_RENDER, lightning)
+hook_event(HOOK_MARIO_UPDATE, rtd)
 hook_event(HOOK_ON_HUD_RENDER, fivesecondcountdown)
 hook_event(HOOK_ON_HUD_RENDER, eightsecondcountdown)
-hook_event(HOOK_MARIO_UPDATE, mariobrokenlegjump)
 hook_event(HOOK_ON_HUD_RENDER, mariobrokenleg)
 hook_event(HOOK_ON_HUD_RENDER, randomizehealth)
 hook_event(HOOK_ON_HUD_RENDER, on_hud_render)

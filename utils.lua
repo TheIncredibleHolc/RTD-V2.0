@@ -15,7 +15,6 @@ end
 --Functions
 function stream_stop_all()
 	audio_stream_stop(moon)
-	audio_stream_stop(nescastle)
 	audio_stream_stop(metalcap)
 	audio_stream_stop(dance)
 	audio_stream_stop(gold)
@@ -104,7 +103,8 @@ gSamples = {
 	audio_sample_load("nicebobomb3.ogg"),
 	audio_sample_load("bobomb1.ogg"),
 	audio_sample_load("bobomb2.ogg"),
-	audio_sample_load("bobomb3.ogg")
+	audio_sample_load("bobomb3.ogg"),
+	audio_sample_load("nescastletimerfuse.ogg")
 }
 
 sBoneBreak = 1
@@ -136,10 +136,10 @@ sGoodbobomb3 = 26
 sBobomb1 = 27
 sBobomb2 = 28
 sBobomb3 = 29
+sNEScastle = 30
 
 --Streams
 moon = audio_stream_load("moon.ogg")
-nescastle = audio_stream_load("nescastletimerfuse.ogg")     loop(nescastle)
 metalcap = audio_stream_load("metalcap.ogg")
 dance = audio_stream_load("mariodance.ogg")
 gold = audio_stream_load("betterthangold.ogg")
