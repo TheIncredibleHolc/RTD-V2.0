@@ -1,16 +1,13 @@
 -- name: Roll The Dice! V2.0 [WIP]
 -- description: Dpad+Up to ROLL THE DICE for a random buff/debuff/random event!    Mod by TheIncredibleHolc
 
--- Disclaimer. I have no idea what I'm doing. If you attempt to work on this code, be prepared to cringe as you look through my three-week long endeavor of learning LUA!
+-- Disclaimer. This is a crude attempt of a V2 patchup/overhaul of my first mod. This code is ATROCIOUS since I had no idea what I was doing back then.
 -- Still, I hope you enjoy it for what it is, and you're welcome to message me on Discord for questions or recommendations! -TheIncredibleHolc
 
 ------Variables n' stuff------
-Threshold = 0
 moontimer = 0
 E_MODEL_GREEN_DEMON = smlua_model_util_get_id("green_demon_geo")
 E_MODEL_CHEESE_BURGER = smlua_model_util_get_id("cheese_burger_geo")
-E_MODEL_SMILER = smlua_model_util_get_id("smiler_geo")
-E_MODEL_ZALGO = smlua_model_util_get_id("zalgo_geo")
 randomhealthtimer = 0
 brokenleg = 0
 brokenlegtimer = 0
@@ -39,9 +36,7 @@ clusterbombexplosions = 0
 clusterbombtimer2 = 0
 alwaysrunning = 0
 alwaysrunningtimer = 0
-Threshold = 50
 welcomeprompt = 0
-sizetimer = 0
 
 --------locals--------
 local network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math_floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math_random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence = network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math.floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math.random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence
@@ -63,9 +58,7 @@ local texbrokenleg = get_texture_info('brokenleg')
 local texmoonjump = get_texture_info('moonjump')
 local textroll = get_texture_info('troll')
 local textrollhud = get_texture_info('trollhud')
-local texchange = get_texture_info('change')
 local texsleep = get_texture_info('sleep')
-local texshrunk = get_texture_info('shrunk')
 local texwelcome = get_texture_info('welcome')
 
 
@@ -761,8 +754,6 @@ function clusterbombs(m)
     end
 end
 
-
-
 function findcap(unloadedcap)
     nearestcap = nearest_mario_state_to_object(unloadedcap)
     if (get_id_from_behavior(unloadedcap.behavior) == id_bhvNormalCap and nearest.playerIndex == 0) then
@@ -873,19 +864,6 @@ function mario_update(m)
         end
     end
 
-    --Mario Size
-    if (randomsize) == 1 then
-        if (sizetimer) >= 1 and (sizetimer) <= 6 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.5,0.5,0.5)
-        end
-        if (sizetimer) <= 14 and (sizetimer) >=7 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.7,0.7,0.7)
-        end
-        if (sizetimer) >= 15 then
-            vec3f_set(m.marioObj.header.gfx.scale,0.3,0.3,0.3)
-        end
-    end
-
     --Mario defusing in water
     if (mariofuse) == 1 then
         if m.playerIndex ~= 0 then return end
@@ -969,17 +947,6 @@ function hud_timers()
     if (welcomeprompt) == 1 then
         djui_hud_set_resolution(RESOLUTION_N64);
         djui_hud_render_texture(texwelcome, 105, 14, .4, .4)
-    end
-
-    --Mario Size Timer
-    if (randomsize) == 1 then
-        sizetimer = sizetimer + 1
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texshrunk, 31, 33, .1, .1)
-    end
-    if (sizetimer) == 240 then
-        sizetimer = 0
-        randomsize = 0
     end
 
     --Mario Sleeping
@@ -1136,7 +1103,7 @@ function hud_timers()
     end
 
 
-    
+
 end
 
 
