@@ -5,11 +5,19 @@ E_MODEL_LIGHTNING2 = smlua_model_util_get_id("lightning2_geo")
 E_MODEL_LIGHTNING3 = smlua_model_util_get_id("lightning3_geo")
 
 function lightning_init(obj)
+    local m = gMarioStates[0]
+
     obj.oFlags = (OBJ_FLAG_ACTIVE_FROM_AFAR | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)
     vec = {x=obj.oPosX, y=obj.oPosY, z=obj.oPosZ}
     local yaw = calculate_yaw(vec, gLakituState.pos)
     obj.oFaceAngleYaw = yaw -22000
 	obj_scale(obj, 1.5)
+
+    if lateral_dist_between_objects(obj, m.marioObj) < 700 then
+        play_transition(WARP_TRANSITION_FADE_INTO_COLOR, 1, 255, 255, 255)
+        play_transition(WARP_TRANSITION_FADE_FROM_COLOR, 3, 255, 255, 255)
+    end
+
 end
 
 function lightning_loop(obj)

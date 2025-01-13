@@ -1,12 +1,52 @@
 -- RTD Utilities n' shit
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+-------- Mod Menu
+
+local function autoroll_toggle()
+    if network_is_server() and gGlobalSyncTable.autoroll then
+        djui_chat_message_create("Auto-rolling disabled.")
+        gGlobalSyncTable.autoroll = false
+    elseif network_is_server() and gGlobalSyncTable.autoroll == false then
+        djui_chat_message_create("Auto-rolling enabled!")
+        gGlobalSyncTable.autoroll = true
+    elseif not network_is_server() then
+        djui_chat_message_create("Option only available for host.")
+    end
+end
+hook_mod_menu_checkbox("Enable Automatic Rolling [HOST]", false, autoroll_toggle)
+
+--[[
+local function disable_notifications()
+	if RTDnotifications then
+		RTDnotifications = false
+		djui_chat_message_create("RTD Notifications have been turned off!")
+	else
+		RTDnotifications = true
+		djui_chat_message_create("RTD Notifications have been turned on!")
+	end
+end
+hook_mod_menu_checkbox("Disable RTD Notifications", false, disable_notifications)
+]]
+
+local function disable_bullshit()
+	bullshit = false
+end
+hook_mod_menu_checkbox("Disable Bullshit", false, disable_bullshit)
 ------------------------------------------------------------------------------------------------------------------------------------------------
 -------- gStateExtras
 gStateExtras = {}
 for i = 0, MAX_PLAYERS-1 do
 	gStateExtras[i] = {
-        enderpearl = false
+        enderpearl = false,
+		invisible = 0,
+		sharting = false,
+		fovStretch = false,
 	}
 end
+
+dead = false
+--RTDnotifications = true
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 -------- Audio Engine
@@ -104,7 +144,10 @@ gSamples = {
 	audio_sample_load("bobomb1.ogg"),
 	audio_sample_load("bobomb2.ogg"),
 	audio_sample_load("bobomb3.ogg"),
-	audio_sample_load("nescastletimerfuse.ogg")
+	audio_sample_load("nescastletimerfuse.ogg"),
+	audio_sample_load("spring.ogg"),
+	audio_sample_load("shart.ogg"),
+	audio_sample_load("fov.ogg")
 }
 
 sBoneBreak = 1
@@ -137,6 +180,9 @@ sBobomb1 = 27
 sBobomb2 = 28
 sBobomb3 = 29
 sNEScastle = 30
+sSpring = 31
+sShart = 32
+sFov = 33
 
 --Streams
 moon = audio_stream_load("moon.ogg")
@@ -158,36 +204,6 @@ function lerp(a, b, t) return a * (1 - t) + b * t end
 
 function vec3f() return {x=0,y=0,z=0} end
 
-function vec3f_rotate_zyx(dest, rotate)
-    local v = { x = dest.x, y = dest.y, z = dest.z }
-    
-    local sx = sins(rotate.x)
-    local cx = coss(rotate.x)
-
-    local sy = sins(rotate.y)
-    local cy = coss(rotate.y)
-
-    local sz = sins(rotate.z)
-    local cz = coss(rotate.z)
-
-    -- Rotation around Z axis
-    local xz = v.x * cz - v.y * sz
-    local yz = v.x * sz + v.y * cz
-    local zz = v.z
-
-    -- Rotation around Y axis
-    local xy = xz * cy + zz * sy
-    local yy = yz
-    local zy = -xz * sy + zz * cy
-
-    -- Rotation around X axis
-    dest.x = xy
-    dest.y = yy * cx - zy * sx
-    dest.z = yy * sx + zy * cx
-
-    return dest
-end
-
 function limit_angle(a) return (a + 0x8000) % 0x10000 - 0x8000 end
 
 function spawn_sync_if_main(behaviorId, modelId, x, y, z, objSetupFunction, i)
@@ -196,3 +212,92 @@ function spawn_sync_if_main(behaviorId, modelId, x, y, z, objSetupFunction, i)
 	print(get_network_player_smallest_global().localIndex + i)
 	if get_network_player_smallest_global().localIndex + i == 0 then print("passed!") return spawn_sync_object(behaviorId, modelId, x, y, z, objSetupFunction) end
 end
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+-------- Custom Actions
+
+ACT_INVISIBLE = allocate_mario_action(ACT_FLAG_MOVING)
+function act_invisible(m)
+	local s = gStateExtras[m.playerIndex]
+    m.marioObj.header.gfx.node.flags = m.marioObj.header.gfx.node.flags & ~GRAPH_RENDER_ACTIVE
+	m.actionTimer = m.actionTimer + 1
+	if m.actionTimer == m.actionArg then
+		local savedY = m.pos.y
+		m.pos.y = savedY
+	end
+	if m.actionTimer == 30 then
+		set_mario_action(m, ACT_IDLE, 0)
+	elseif m.actionTimer >= 150 then
+		m.marioObj.header.gfx.node.flags = m.marioObj.header.gfx.node.flags | GRAPH_RENDER_ACTIVE
+		set_mario_action(m, ACT_IDLE, 0)
+	end
+	if m.action == ACT_PUNCHING or m.action == ACT_GROUND_BONK or m.action == ACT_FORWARD_GROUND_KB or m.action == ACT_BACKWARD_GROUND_KB or m.action == ACT_HARD_FORWARD_GROUND_KB or m.action == ACT_HARD_BACKWARD_GROUND_KB or m.action == ACT_SOFT_FORWARD_GROUND_KB or m.action == ACT_SOFT_BACKWARD_GROUND_KB then
+		set_mario_action(m, ACT_IDLE, 0)
+		djui_chat_message_create("reset")
+	end
+
+end
+hook_mario_action(ACT_INVISIBLE, act_invisible)
+
+
+
+ACT_RAGDOLL = allocate_mario_action(ACT_GROUP_CUTSCENE|ACT_FLAG_STATIONARY|ACT_FLAG_INTANGIBLE)
+function act_ragdoll(m)
+    local s = gStateExtras[0]
+    local stepResult = perform_air_step(m, 0)
+
+    if stepResult == AIR_STEP_LANDED then
+        if m.floor.type == SURFACE_BURNING then
+            set_mario_action(m, ACT_LAVA_BOOST, 0)
+		else
+			set_mario_action(m, ACT_FORWARD_GROUND_KB, 0)
+		end
+
+    end
+    set_character_animation(m, CHAR_ANIM_AIRBORNE_ON_STOMACH)
+    m.marioBodyState.eyeState = MARIO_EYES_DEAD
+    if m.actionArg == 1 then
+        local l = gLakituState
+        l.posHSpeed, l.posVSpeed, l.focHSpeed, l.focVSpeed = 0, 0, 0, 0
+    end
+    vec3s_set(m.angleVel, 2000, 1000, 400)
+    vec3s_add(m.faceAngle, m.angleVel)
+    vec3s_copy(m.marioObj.header.gfx.angle, m.faceAngle)
+end
+hook_mario_action(ACT_RAGDOLL, act_ragdoll)
+
+ACT_SHART = allocate_mario_action(ACT_FLAG_INTANGIBLE|ACT_FLAG_INVULNERABLE|ACT_GROUP_CUTSCENE)
+function act_shart(m)
+	local s = gStateExtras[m.playerIndex]
+	obj_update_gfx_pos_and_angle(m.marioObj)
+	if m.pos.y ~= m.floorHeight then
+		m.pos.y = math.max(m.floorHeight, m.pos.y - 100)
+	end
+	m.actionTimer = m.actionTimer + 1
+	set_mario_animation(m, MARIO_ANIM_SHOCKED)
+
+	if m.actionTimer == 2 then
+		if m.character.type ~= CT_MARIO then
+			play_character_sound(m, CHAR_SOUND_WAAAOOOW)
+		end
+	end
+
+	if m.actionTimer == 10 or m.actionTimer == 20 or m.actionTimer == 30 or m.actionTimer == 40 or m.actionTimer == 50 or m.actionTimer == 60 or m.actionTimer == 70 or m.actionTimer == 80 or m.actionTimer == 90 or m.actionTimer == 100 or m.actionTimer == 110
+	or m.actionTimer == 120 or m.actionTimer == 130 or m.actionTimer == 140 or m.actionTimer == 150 or m.actionTimer == 160 then
+		m.particleFlags = PARTICLE_MIST_CIRCLE
+	end
+
+	if m.actionTimer >= 50 and m.actionTimer < 150 then
+		m.marioBodyState.eyeState = MARIO_EYES_DEAD
+	end
+
+	if m.actionTimer >= 200 then
+		play_character_sound(m, CHAR_SOUND_EEUH)
+		m.actionTimer = 0
+		s.sharting = false
+		set_mario_action(m, ACT_IDLE, 0)
+	end
+end
+hook_mario_action(ACT_SHART, act_shart)
+
