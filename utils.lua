@@ -147,7 +147,8 @@ gSamples = {
 	audio_sample_load("nescastletimerfuse.ogg"),
 	audio_sample_load("spring.ogg"),
 	audio_sample_load("shart.ogg"),
-	audio_sample_load("fov.ogg")
+	audio_sample_load("fov.ogg"),
+	audio_sample_load("teleport2.ogg")
 }
 
 sBoneBreak = 1
@@ -183,6 +184,7 @@ sNEScastle = 30
 sSpring = 31
 sShart = 32
 sFov = 33
+sTeleport2 = 34
 
 --Streams
 moon = audio_stream_load("moon.ogg")

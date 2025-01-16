@@ -255,8 +255,12 @@ function rtd(m)
     if (m.controller.buttonPressed & U_JPAD) ~= 0 or (gGlobalSyncTable.autoroll) then --ROLL THE DICE!!
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
-            RandomEvent = math_random(1,30)
-            rtdtimer = 30 * 10 
+            RandomEvent = math_random(1,31)
+            if not gGlobalSyncTable.autoroll then
+                rtdtimer = 30 * 10 --10 seconds
+            else
+                rtdtimer = 30 * 20 --20 seconds. Cuz autoroll gets really busy really fast.
+            end
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
@@ -659,7 +663,7 @@ function rtd(m)
                 rtd_fling()
                 RandomEvent = 0
             end
-            if (RandomEvent) == 29 then --Mario gets CANNON'ed! (NEEDS WORK!!)
+            if (RandomEvent) == 29 then --Mario gets CANNON'ed! (DONE!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a cannon!", 1)
                 m.pos.y = m.pos.y + 1000
                 m.forwardVel = 0
@@ -671,37 +675,67 @@ function rtd(m)
                     obj.oBehParams2ndByte = 2
                     obj.oAction = 3
                 end)
-                vec3f_copy(vec, m.pos)
+                
             end
-            if (RandomEvent) == 30 then --FOV Stretch
+            if (RandomEvent) == 30 then --FOV Stretch (DONE!)
                 if gGlobalSyncTable.floodenabled then
                     --reroll because flood breaks the fov
                     if not gGlobalSyncTable.autoroll then
-                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " had their camera stretched!", 1)
+                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " gets to re-roll!", 1)
                     end
                     rtdtimer = 10
                     RandomEvent = 0
                 else
                     local np = gNetworkPlayers[0]
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got an extra wide view!", 1)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " had their camera stretched!", 1)
                     s.fovStretch = true
                     set_fov_function(140)
                     network_play(sFov, m.pos, 1.5, m.playerIndex)
                     RandomEvent = 0
                 end
             end
-            if (RandomEvent) == 31 then --
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. "'s world is upside down!", 1)
+            if (RandomEvent) == 31 then --Teleports you to a random connected player! (DONE!)
+                local np = gNetworkPlayers[0]
+                local playcount = network_player_connected_count() - 1
+                --djui_chat_message_create(tostring(playcount))
+                if playcount == nil or playcount < 1 then
+                    --reroll
+                    if not gGlobalSyncTable.autoroll then
+                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " gets a re-roll!", 1)
+                    end
+                    rtdtimer = 10
+                    RandomEvent = 0
+                else
+                    local random = math.random(1, playcount)
+                    local randomplayer = gMarioStates[random]
+                    local randomNP = gNetworkPlayers[random]
+
+                    if randomNP.currLevelNum == np.currLevelNum then
+                        m.pos.x = randomplayer.pos.x
+                        m.pos.y = randomplayer.pos.y
+                        m.pos.z = randomplayer.pos.z
+                        network_play(sTeleport2, gMarioStates[0].pos, 1, m.playerIndex)
+                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " teleported to " .. tostring(gNetworkPlayers[random].name), 1)
+                        RandomEvent = 0
+                    else
+                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled nothing!", 1)
+                        RandomEvent = 0
+                    end
+                end
+            end
+            if (RandomEvent) == 32 then --Placeholder
+                local np = gNetworkPlayers[0]
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled X!", 1)
+                
 
                 RandomEvent = 0
             end
-        
 
 
 
 
         elseif gGlobalSyncTable.autoroll then
-            --This blank spot prevents Nope sound from playing 30 times per second.
+            --This blank spot prevents Nope sound from playing 30 times per second when auto-roll is enabled.
         else
             local_play(sNope, m.pos, 1)
         end
