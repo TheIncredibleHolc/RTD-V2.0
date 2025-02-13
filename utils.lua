@@ -45,6 +45,7 @@ for i = 0, MAX_PLAYERS-1 do
 	}
 end
 
+rerolling = false
 dead = false
 --RTDnotifications = true
 
@@ -107,11 +108,18 @@ hook_event(HOOK_ON_PACKET_RECEIVE, function (data)
 	if data.type == PACKET_SOUND and is_player_active(gMarioStates[network_local_index_from_global(data.i)]) ~= 0 then
 		local_play(data.id, {x=data.x, y=data.y, z=data.z}, data.vol)
 	end
-
-	if data.type == PACKET_UNLOCK then
-		unlock_trophy(data.id)
-	end
 end)
+
+function get_random_nearby_player() --Gets the player index number of a random player in the same level and area as you.
+    local nearbyPlayers = {}
+    local np = gNetworkPlayers
+    for i = 1, MAX_PLAYERS - 1 do
+        if i ~= 0 and np[i].connected and np[i].currLevelNum == np[0].currLevelNum and np[i].currAreaIndex == np[0].currAreaIndex then
+            table.insert(nearbyPlayers, gMarioStates[i].playerIndex)
+        end
+    end
+	if #nearbyPlayers ~= 0 then return nearbyPlayers[math.random(1, #nearbyPlayers)] end
+end
 
 --Samples
 gSamples = {

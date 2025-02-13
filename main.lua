@@ -252,9 +252,10 @@ hook_event(HOOK_ON_WARP, alive)
 function rtd(m)
     local s = gStateExtras[0]
     if m.playerIndex ~= 0 then return end
-    if (m.controller.buttonPressed & U_JPAD) ~= 0 or (gGlobalSyncTable.autoroll) then --ROLL THE DICE!!
+    if (m.controller.buttonPressed & U_JPAD) ~= 0 or (gGlobalSyncTable.autoroll) or rerolling then --ROLL THE DICE!!
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
+            rerolling = false
             RandomEvent = math_random(1,31)
             if not gGlobalSyncTable.autoroll then
                 rtdtimer = 30 * 10 --10 seconds
@@ -317,13 +318,12 @@ function rtd(m)
                 
             end
             if (RandomEvent) == 7 then --Mario gets sucked into the earth. (DONE)
-                local reroll = math.random(1,5)
-                if reroll == 5 then
+                local random = math.random(1,5)
+                if random == 5 then
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " was sucked into the ground!", 1)
                     set_mario_action(gMarioStates[0], ACT_QUICKSAND_DEATH, 0)
                 else
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " gets to roll again!", 1)
-                    rtdtimer = 10
+                    reroll()
                 end
             end
             if (RandomEvent) == 8 then --Mario gets a coin jackpot! (DONE)
@@ -462,9 +462,10 @@ function rtd(m)
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
                 spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
             end
-            if (RandomEvent) == 12 then --Mario becomes INVISIBLE!
+            if (RandomEvent) == 12 then --Mario becomes INVISIBLE! (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is invisible!", 1)
                 s.invisible = 1
+                gPlayerSyncTable[m.playerIndex].invisible = true
                 eightsecondcount = 1
                 spawn_mist_particles()
                 --set_mario_action(m, ACT_INVISIBLE, 0)
@@ -681,7 +682,7 @@ function rtd(m)
                 if gGlobalSyncTable.floodenabled then
                     --reroll because flood breaks the fov
                     if not gGlobalSyncTable.autoroll then
-                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " gets to re-roll!", 1)
+                        reroll()
                     end
                     rtdtimer = 10
                     RandomEvent = 0
@@ -694,34 +695,18 @@ function rtd(m)
                     RandomEvent = 0
                 end
             end
-            if (RandomEvent) == 31 then --Teleports you to a random connected player! (DONE!)
-                local np = gNetworkPlayers[0]
-                local playcount = network_player_connected_count() - 1
-                --djui_chat_message_create(tostring(playcount))
-                if playcount == nil or playcount < 1 then
-                    --reroll
-                    if not gGlobalSyncTable.autoroll then
-                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " gets a re-roll!", 1)
-                    end
-                    rtdtimer = 10
-                    RandomEvent = 0
+            if (RandomEvent) == 31 then --Teleports you to a random nearby player!
+                local targetIndex = get_random_nearby_player()
+                if targetIndex == nil then
+                    reroll()
                 else
-                    local random = math.random(1, playcount)
-                    local randomplayer = gMarioStates[random]
-                    local randomNP = gNetworkPlayers[random]
-
-                    if randomNP.currLevelNum == np.currLevelNum then
-                        m.pos.x = randomplayer.pos.x
-                        m.pos.y = randomplayer.pos.y
-                        m.pos.z = randomplayer.pos.z
-                        network_play(sTeleport2, gMarioStates[0].pos, 1, m.playerIndex)
-                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " teleported to " .. tostring(gNetworkPlayers[random].name), 1)
-                        RandomEvent = 0
-                    else
-                        djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled nothing!", 1)
-                        RandomEvent = 0
-                    end
+                    m.pos.x = gMarioStates[targetIndex].pos.x
+                    m.pos.y = gMarioStates[targetIndex].pos.y
+                    m.pos.z = gMarioStates[targetIndex].pos.z
+                    network_play(sTeleport2, gMarioStates[0].pos, 1, m.playerIndex)
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " teleported to " .. tostring(gNetworkPlayers[targetIndex].name), 1)
                 end
+                RandomEvent = 0
             end
             if (RandomEvent) == 32 then --Placeholder
                 local np = gNetworkPlayers[0]
@@ -730,17 +715,18 @@ function rtd(m)
 
                 RandomEvent = 0
             end
-
-
-
-
         elseif gGlobalSyncTable.autoroll then
             --This blank spot prevents Nope sound from playing 30 times per second when auto-roll is enabled.
         else
             local_play(sNope, m.pos, 1)
         end
     end
+end
 
+function reroll()
+    rerolling = true
+    rtdtimer = 1
+    RandomEvent = 0
 end
 
 function rtd_fling ()
@@ -1008,82 +994,27 @@ function hook_update()
         end
     end
 
-        --Mario Spinning
-        if (mariospin) == 1 then
+    --Mario Spinning
+    if (mariospin) == 1 then
 
-            if (speeen % 20) == 0 then
-                set_mario_action(gMarioStates[0], ACT_CROUCHING, 0)
-            end
-
-            if (speeen) % 21 == 0 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-                speeen = 0
-            end
-
-            if (nospeen) == 5 then
-                nospeen = 0
-                speeen = 0
-                mariospin = 0
-                stream_stop_all()
-                set_background_music(0, get_current_background_music(), 0)
-            end
+        if (speeen % 20) == 0 then
+            set_mario_action(gMarioStates[0], ACT_CROUCHING, 0)
         end
 
-        --[[
-        if (mariospin) == 1 then
-            if (speeen) == 30 then
-                set_mario_animation(m, MARIO_ANIM_BREAKDANCE)
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (speeen) == 60 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (speeen) == 90 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (speeen) == 120 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (speeen) == 150 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (speeen) == 180 then
-                set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
-                nospeen = nospeen + 1
-            end
-            if (nospeen) == 6 then
-                nospeen = 0
-                speeen = 0
-                mariospin = 0
-                stream_stop_all()
-                set_background_music(0, get_current_background_music(), 0)
-            end
+        if (speeen) % 21 == 0 then
+            set_mario_action(gMarioStates[0], ACT_PUNCHING, 9) --breakdance
+            nospeen = nospeen + 1
+            speeen = 0
         end
-        ]]
 
-    --Mario goes invisible
-
-    if s.invisible > 0 and s.invisible < 240 then
-        if m.action ~= ACT_IDLE then
-            set_mario_action(m, ACT_IDLE, 0)
+        if (nospeen) == 5 then
+            nospeen = 0
+            speeen = 0
+            mariospin = 0
+            stream_stop_all()
+            set_background_music(0, get_current_background_music(), 0)
         end
-        s.invisible = s.invisible + 1
-        m.marioObj.header.gfx.node.flags = m.marioObj.header.gfx.node.flags & ~GRAPH_RENDER_ACTIVE
-    else
-        m.marioObj.header.gfx.node.flags = m.marioObj.header.gfx.node.flags | GRAPH_RENDER_ACTIVE   
     end
-    if s.invisible > 240 then
-        m.marioObj.header.gfx.node.flags = m.marioObj.header.gfx.node.flags | GRAPH_RENDER_ACTIVE
-        s.invisible = 0
-    end
-    
-
 
 end
 
@@ -1092,8 +1023,24 @@ function on_warp()
 end
 
 function mario_update(m)
-    local m = gMarioStates[0]
-    local s = gStateExtras[0]
+    local s = gStateExtras[m.playerIndex]
+
+    --Invisible
+    if s.invisible > 0 and s.invisible < 240 then
+        obj_set_model_extended(m.marioObj, E_MODEL_NONE)
+        s.invisible = s.invisible + 1
+    elseif s.invisible > 239 then
+        s.invisible = 0
+        gPlayerSyncTable[m.playerIndex].invisible = false
+    end
+
+    for i = 0, (MAX_PLAYERS - 1) do
+		if gPlayerSyncTable[i].invisible then
+			local m = gMarioStates[i]
+			obj_set_model_extended(m.marioObj, E_MODEL_NONE)
+		end
+	end
+
 
     --Moon jumping
     if (moonjump) == 1 then
@@ -1343,11 +1290,34 @@ function hud_timers()
 end
 
 
---------Hooks--------
 
+
+local function before_set_mario_action(m,action)
+    if m.playerIndex ~= 0 then return end
+
+    if marioasleep == 1 and m.pos.y == m.floorHeight then --Stops mario from waking if sleep event enabled. Also prevents from sleeping while in-air.
+        if action == ACT_WAKING_UP then return ACT_SLEEPING end
+    end
+
+    --[[
+    if mariospin == 1 then
+        if action == ACT_WALKING then set_mario_action(m, ACT_PUNCHING, 9) end
+    end
+    ]]
+
+end
+
+
+
+
+
+--------Hooks--------
+---
 hook_event(HOOK_MARIO_UPDATE, mario_update)
 hook_event(HOOK_ON_HUD_RENDER, hud_timers)
 hook_event(HOOK_UPDATE, hook_update)
+
+hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
 hook_event(HOOK_ON_WARP, on_warp)
 hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
 hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
