@@ -474,7 +474,7 @@ function rtd(m)
                 end
             end
             if (RandomEvent) == 14 then --Mario gets MOONJUMP!(DONE)
-                local_play(sMoonjump, m.pos, 1)
+                network_play(sMoonjump, m.pos, 1, m.playerIndex)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got MOON JUMP!", 1)
                 moonjump = 1
                 RandomEvent = 0
@@ -606,7 +606,7 @@ function rtd(m)
                 end
             end
             if (RandomEvent) == 23 then --Mario sharts himself (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is sharting himself!", 1)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is sharting!", 1)
                 s.sharting = true
                 set_mario_action(m, ACT_SHART, 0)
                 network_play(sShart, m.pos, 1, m.playerIndex)
@@ -676,7 +676,7 @@ function rtd(m)
                     RandomEvent = 0
                 end
             end
-            if (RandomEvent) == 31 then --Teleports you to a random nearby player!
+            if (RandomEvent) == 31 then --Teleports you to a random nearby player! (DONE)
                 local targetIndex = get_random_nearby_player()
                 if targetIndex == nil then
                     reroll()
@@ -1134,8 +1134,18 @@ function hud_timers()
     --Blindness
     if (blind) == 1 then
         blindcounter = blindcounter + 1
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(textroll, -20, -50, .9, .7)
+        local sw = djui_hud_get_screen_width()
+        local sh = djui_hud_get_screen_height()
+        local wh = textroll.width
+        local texheight = textroll.height
+        local s = sh/wh
+        
+        djui_hud_set_resolution(RESOLUTION_DJUI)
+        djui_hud_render_texture(textroll, 0, (sh-texheight)/-2, s*2, s*1.5)
+        --djui_hud_render_texture(textroll, -20, -50, .9, .7)
+
+
+
         djui_hud_set_resolution(RESOLUTION_N64);
         djui_hud_render_texture(textrollhud, 20, 33, .1, .1)
     end
