@@ -65,13 +65,14 @@ local texwelcome = get_texture_info('welcome')
 
 
 --------functions--------
-running = 0
+--[[running = 0
 function testing()
     m = gMarioStates[0]
     if m.controller.buttonDown & D_JPAD ~= 0 then
     end
 end
 hook_event(HOOK_UPDATE, testing)
+]]
 
 function RTDclock (m)
     if not dead then
@@ -419,48 +420,28 @@ function rtd(m)
                 RandomEvent = 0
             end
             if (RandomEvent) == 11 then --Goomba-pacalypse!! (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a Goompacalypse!", 1)
-                local_play(sHomer, m.pos, 1)
-
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z - 200,nil)
-                spawn_sync_object(id_bhvGoomba,E_MODEL_GOOMBA,gMarioStates[0].pos.x - 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                local m = gMarioStates[0]
+                local random = math.random(1,2)
+                network_play(sHomer, m.pos, 1, m.playerIndex)
+                if random == 1 then
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a Bobomb-pacalypse!", 1)
+                    for i = 0, 30 do
+                        local xoffset = math.random(-1200, 1200)
+                        local zoffset = math.random(-1200, 1200)
+                        spawn_sync_object(id_bhvBobomb, E_MODEL_BLACK_BOBOMB, m.pos.x + xoffset, m.pos.y, m.pos.z + zoffset, function (bobomb)
+                            bobomb.oBobombFuseLit = 1
+                            bobomb.oAction = BOBOMB_ACT_CHASE_MARIO
+                            bobomb.oForwardVel = 35
+                        end)
+                    end
+                else
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a Goompacalypse!", 1)
+                    for i = 0, 40 do
+                        local xoffset = math.random(-200, 200)
+                        local zoffset = math.random(-200, 200)
+                        spawn_sync_object(id_bhvGoomba, E_MODEL_GOOMBA, m.pos.x + xoffset, m.pos.y, m.pos.z + zoffset, nil)
+                    end
+                end
             end
             if (RandomEvent) == 12 then --Mario becomes INVISIBLE! (DONE)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is invisible!", 1)
@@ -1052,10 +1033,10 @@ function mario_update(m)
     --Low gravity
     if (lowgravity) == 1 then
         m.peakHeight = 0
-        if (m.action & ACT_FLAG_AIR) ~= 0 and m.action ~= ACT_LONG_JUMP and m.controller.buttonPressed & A_BUTTON ~= 0 then
+        if (m.action & ACT_FLAG_AIR) ~= 0 and m.action ~= ACT_LONG_JUMP then
             m.vel.y = m.vel.y + 2.5
         end
-        if m.action == ACT_LONG_JUMP and m.controller.buttonPressed & A_BUTTON ~= 0 then
+        if m.action == ACT_LONG_JUMP then
             m.vel.y = m.vel.y + 1.5
         end
     end
