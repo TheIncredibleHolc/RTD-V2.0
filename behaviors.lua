@@ -213,7 +213,7 @@ function sniper_bullet_loop(o)
         m.vel.y = 90
         m.vel.x = m.vel.x + sins(o.oMoveAngleYaw) * 50
         m.vel.z = m.vel.z + coss(o.oMoveAngleYaw) * 50
-        m.health = m.health - 1200
+        m.health = m.health - 2048
         set_mario_action(m, ACT_RAGDOLL, 0)
         network_play(sBulletSplat, m.pos, 1, m.playerIndex)
         obj_mark_for_deletion(o)
