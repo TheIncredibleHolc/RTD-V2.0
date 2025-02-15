@@ -70,7 +70,8 @@ function gun_sniper_loop(o)
     cur_obj_move_standard(-78)
     cur_obj_move_using_fvel_and_gravity()
 
-    if m.heldObj ~= o and o.oAction == 1 then
+    if o.oAction == 1 then
+        cur_obj_enable_rendering_and_become_tangible(o)
         if o.oPosY > o.oFloorHeight + 100 then
             o.oGravity = -1
         elseif o.oAction == 1 then
@@ -88,19 +89,38 @@ function gun_sniper_loop(o)
     end
 
     if m.heldObj == o then
+        o.oAction = 2
         cur_obj_disable_rendering_and_become_intangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER_ACTIVE)
         o.oGraphYOffset = 200
-        o.oAction = 2
         network_send_object(o, true)
     else
-        cur_obj_enable_rendering_and_become_tangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER)
         o.oGraphYOffset = 0
     end
 
     if o.oAction == 2 then
         cur_obj_disable_rendering_and_become_intangible(o)
+        if o.oAmmo == 0 then return end
+        local dropped = true
+        for i = 0, MAX_PLAYERS-1 do
+            if gMarioStates[i].heldObj == o then
+                dropped = false
+            end
+        end
+        if dropped then
+            o.oAction = 1
+            network_send_object(o, true)
+        end
+    end
+
+
+        --[[
+        if cur_obj_get_dropped() then
+            o.oAction = 1
+            network_send_object(o, true)
+        end
+        
         if m.action == ACT_THROWING or m.action == ACT_AIR_THROW or m.action == ACT_CROUCHING or m.action == ACT_START_CROUCHING or
         m.action == ACT_GROUND_POUND or m.action == ACT_SLIDE_KICK or m.action == ACT_CROUCH_SLIDE then
             cur_obj_move_after_thrown_or_dropped(30, 35)
@@ -108,7 +128,8 @@ function gun_sniper_loop(o)
             o.oAction = 3
             network_send_object(o, true)
         end
-    end
+        ]]
+    
 
     if m.heldObj == o then
         if m.controller.buttonDown & L_TRIG == 0 then
@@ -149,7 +170,6 @@ function gun_sniper_loop(o)
             mario_drop_held_object(m)
             set_mario_action(m, ACT_THROWING, 0)
             cur_obj_move_after_thrown_or_dropped(30, 35)
-            
             o.oPosY = o.oPosY + 50
             o.oAction = 3
         else
@@ -202,8 +222,8 @@ function sniper_bullet_init(o)
     o.header.gfx.skipInViewCheck = true
     o.collisionData = COL_SNIPER_BULLET
     o.oCollisionDistance = 10000
-    o.hitboxRadius = 80
-    o.hitboxHeight = 80
+    o.hitboxRadius = 120
+    o.hitboxHeight = 120
     o.oWallHitboxRadius = 50
     o.oInteractType = INTERACT_DAMAGE
     obj_scale(o, 2)
@@ -246,8 +266,8 @@ function bullet_miss(o)
         z = o.oPosZ
     }
 	cur_obj_update_floor_height_and_get_floor()
-	network_play(sBulletMiss, oPos, 1, m.playerIndex)
-	spawn_sync_object(id_bhvDirtParticleSpawner, E_MODEL_DIRT_ANIMATION, o.oPosX, o.oPosY, o.oPosZ, nil)
+	local_play(sBulletMiss, oPos, 1)
+	spawn_non_sync_object(id_bhvDirtParticleSpawner, E_MODEL_DIRT_ANIMATION, o.oPosX, o.oPosY, o.oPosZ, nil)
 	obj_mark_for_deletion(o)
 end
 
