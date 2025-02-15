@@ -257,11 +257,11 @@ function rtd(m)
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
             rerolling = false
-            RandomEvent = math_random(1,31)
+            RandomEvent = math_random(32,32)
             if not gGlobalSyncTable.autoroll then
                 rtdtimer = 30 * 10 --10 seconds
             else
-                rtdtimer = 30 * 20 --20 seconds. Cuz autoroll gets really busy really fast.
+                rtdtimer = 30 * 15 --15 seconds. Cuz autoroll gets really busy really fast.
             end
             if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
@@ -665,7 +665,7 @@ function rtd(m)
                     if not gGlobalSyncTable.autoroll then
                         reroll()
                     end
-                    rtdtimer = 10
+                    --rtdtimer = 10
                     RandomEvent = 0
                 else
                     local np = gNetworkPlayers[0]
@@ -689,12 +689,17 @@ function rtd(m)
                 end
                 RandomEvent = 0
             end
-            if (RandomEvent) == 32 then --Placeholder
+            if (RandomEvent) == 32 then --Sniper Rifle! ()
                 local np = gNetworkPlayers[0]
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled X!", 1)
-                
-
-                RandomEvent = 0
+                local chancespawn = math.random(1,6)
+                if chancespawn > 4 then --This comes out to a 30% chance that the gun will spawn.
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " HAS A GUN!!", 1)
+                    spawn_sync_object(id_bhvSniper, E_MODEL_GUN_SNIPER, m.pos.x, m.pos.y, m.pos.z, nil)
+                    network_play(sGunspawn, m.pos, 1, m.playerIndex)
+                    RandomEvent = 0
+                else
+                    reroll()
+                end
             end
         elseif gGlobalSyncTable.autoroll then
             --This blank spot prevents Nope sound from playing 30 times per second when auto-roll is enabled.
@@ -705,8 +710,8 @@ function rtd(m)
 end
 
 function reroll()
+    rtdtimer = 0
     rerolling = true
-    rtdtimer = 1
     RandomEvent = 0
 end
 
@@ -1107,6 +1112,8 @@ end
 
 function hud_timers()
     local m = gMarioStates[0]
+    local screenHeight = djui_hud_get_screen_height()
+    local screenWidth = djui_hud_get_screen_width()
 
     --Welcome prompt
     if (welcomeprompt) == 1 then
@@ -1117,6 +1124,19 @@ function hud_timers()
     if (welcomeprompt) == 1 then
         djui_hud_set_resolution(RESOLUTION_N64);
         djui_hud_render_texture(texwelcome, 105, 14, .4, .4)
+    end
+
+    --HUD Ammo counter
+    if m.heldObj ~= nil then
+        if obj_has_behavior_id(m.heldObj, id_bhvSniper) then
+            local ammoString = "Ammo: " .. tostring(m.heldObj.oAmmo)
+            local measured_ammo = djui_hud_measure_text(ammoString)
+            local centered_ammo_printX = (screenWidth/2) - ((measured_ammo) / 2)
+            local centered_ammo_printY = (screenHeight)
+            if m.heldObj.oAmmo > 0 then
+                djui_hud_print_text(ammoString, centered_ammo_printX, centered_ammo_printY - (centered_ammo_printY / 4), 1)
+            end
+        end
     end
 
     --Mario Sleeping
@@ -1139,12 +1159,10 @@ function hud_timers()
         local wh = textroll.width
         local texheight = textroll.height
         local s = sh/wh
-        
+
         djui_hud_set_resolution(RESOLUTION_DJUI)
         djui_hud_render_texture(textroll, 0, (sh-texheight)/-2, s*2, s*1.5)
         --djui_hud_render_texture(textroll, -20, -50, .9, .7)
-
-
 
         djui_hud_set_resolution(RESOLUTION_N64);
         djui_hud_render_texture(textrollhud, 20, 33, .1, .1)

@@ -156,7 +156,11 @@ gSamples = {
 	audio_sample_load("spring.ogg"),
 	audio_sample_load("shart.ogg"),
 	audio_sample_load("fov.ogg"),
-	audio_sample_load("teleport2.ogg")
+	audio_sample_load("teleport2.ogg"),
+	audio_sample_load("gunshot.ogg"),
+	audio_sample_load("bulletmiss.ogg"),
+	audio_sample_load("bulletsplat.ogg"),
+	audio_sample_load("gunspawn.ogg")
 }
 
 sBoneBreak = 1
@@ -193,12 +197,29 @@ sSpring = 31
 sShart = 32
 sFov = 33
 sTeleport2 = 34
+sGunshot = 35
+sBulletMiss = 36
+sBulletSplat = 37
+sGunspawn = 38
 
 --Streams
 moon = audio_stream_load("moon.ogg")
 metalcap = audio_stream_load("metalcap.ogg")
 dance = audio_stream_load("mariodance.ogg")
 gold = audio_stream_load("betterthangold.ogg")
+
+--Custom Models
+E_MODEL_GUN_SNIPER = smlua_model_util_get_id("gun_sniper_geo")
+E_MODEL_GUN_SNIPER_ACTIVE = smlua_model_util_get_id("gun_sniperActive_geo")
+E_MODEL_GUN_SNIPER_SMOKE = smlua_model_util_get_id("sniper_smoke_geo")
+COL_GUN_SNIPER = smlua_collision_util_get("gun_sniper_collision")
+E_MODEL_SNIPER_BULLET = smlua_model_util_get_id("sniper_bullet_geo")
+COL_SNIPER_BULLET = smlua_collision_util_get("sniper_bullet_collision")
+
+define_custom_obj_fields({
+    oAmmo = "u32",
+    oTracerScale = "u32"
+})
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
 -------- Helper Functions
