@@ -88,15 +88,16 @@ function gun_sniper_loop(o)
     end
 
     if m.heldObj == o then
+        cur_obj_disable_rendering_and_become_intangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER_ACTIVE)
         o.oGraphYOffset = 200
     else
+        cur_obj_enable_rendering_and_become_tangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER)
         o.oGraphYOffset = 0
     end
 
     if m.heldObj == o then
-        cur_obj_disable_rendering_and_become_intangible(o)
         if m.controller.buttonDown & L_TRIG == 0 then
             marioAngle = m.faceAngle.y
         end
@@ -105,7 +106,7 @@ function gun_sniper_loop(o)
             m.forwardVel = 0
             m.faceAngle.y = marioAngle
             m.intendedYaw = marioAngle
-            djui_chat_message_create("strafing")
+            --djui_chat_message_create("strafing")
         end
 
         if m.controller.buttonPressed & Y_BUTTON ~= 0 then
@@ -121,15 +122,12 @@ function gun_sniper_loop(o)
             elseif m.character.type == CT_WALUIGI then
                 offset = 60
             end
-            spawn_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_MIST, m.pos.x, m.pos.y + offset, m.pos.z, nil)
-            spawn_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, m.pos.x, m.pos.y + offset, m.pos.z, nil)
-            spawn_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, m.pos.x, m.pos.y + offset, m.pos.z, nil)
+            spawn_non_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_MIST, m.pos.x, m.pos.y + offset, m.pos.z, nil)
+            spawn_non_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, m.pos.x, m.pos.y + offset, m.pos.z, nil)
+            spawn_non_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, m.pos.x, m.pos.y + offset, m.pos.z, nil)
             o.oAmmo = o.oAmmo - 1
             network_play(sGunshot, m.pos, 0.6, m.playerIndex)
         end
-
-    else
-        cur_obj_enable_rendering_and_become_tangible(o)
     end
 
 

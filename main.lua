@@ -1344,4 +1344,3 @@ hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
 hook_event(HOOK_CHARACTER_SOUND, function(m, sound)
     if sound == CHAR_SOUND_PUNCH_HOO and mariospin ~= 0 then return 0 end
 end)
-
