@@ -91,10 +91,23 @@ function gun_sniper_loop(o)
         cur_obj_disable_rendering_and_become_intangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER_ACTIVE)
         o.oGraphYOffset = 200
+        o.oAction = 2
+        network_send_object(o, true)
     else
         cur_obj_enable_rendering_and_become_tangible(o)
         obj_set_model_extended(o, E_MODEL_GUN_SNIPER)
         o.oGraphYOffset = 0
+    end
+
+    if o.oAction == 2 then
+        cur_obj_disable_rendering_and_become_intangible(o)
+        if m.action == ACT_THROWING or m.action == ACT_AIR_THROW or m.action == ACT_CROUCHING or m.action == ACT_START_CROUCHING or
+        m.action == ACT_GROUND_POUND or m.action == ACT_SLIDE_KICK or m.action == ACT_CROUCH_SLIDE then
+            cur_obj_move_after_thrown_or_dropped(30, 35)
+            o.oPosY = o.oPosY + 50
+            o.oAction = 3
+            network_send_object(o, true)
+        end
     end
 
     if m.heldObj == o then
