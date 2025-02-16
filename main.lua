@@ -691,8 +691,8 @@ function rtd(m)
             end
             if (RandomEvent) == 32 then --Sniper Rifle! ()
                 local np = gNetworkPlayers[0]
-                local chancespawn = math.random(1,6)
-                if chancespawn > 4 then --This comes out to a 30% chance that the gun will spawn.
+                local chancespawn = math.random(1,2)
+                if chancespawn == 2 then --This comes out to a 50% chance that the gun will spawn.
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " HAS A GUN!!", 1)
                     spawn_sync_object(id_bhvSniper, E_MODEL_GUN_SNIPER, m.pos.x, m.pos.y, m.pos.z, nil)
                     network_play(sGunspawn, m.pos, 1, m.playerIndex)

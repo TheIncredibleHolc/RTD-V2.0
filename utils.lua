@@ -218,7 +218,11 @@ COL_SNIPER_BULLET = smlua_collision_util_get("sniper_bullet_collision")
 
 define_custom_obj_fields({
     oAmmo = "u32",
-    oTracerScale = "u32"
+    oTracerScale = "u32",
+	oGunAngle = "s32",
+	oBulletPosX = "s32",
+	oBulletPosY = "s32",
+	oBulletPosZ = "s32"
 })
 
 ------------------------------------------------------------------------------------------------------------------------------------------------

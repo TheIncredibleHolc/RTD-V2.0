@@ -59,7 +59,11 @@ function gun_sniper_init(o)
     o.oFriction = 0.8
     o.oAmmo = 20
     o.oAction = 1
-    network_init_object(o, true, nil)
+    o.oBulletPosX = o.oPosX
+    o.oBulletPosY = o.oPosY
+    o.oBulletPosZ = o.oPosZ
+    o.oGunAngle = o.oFaceAngleYaw
+    network_init_object(o, true, {'oAmmo', 'oBulletPosX', 'oBulletPosY', 'oBulletPosZ', 'oGunAngle'})
 end
 
 function gun_sniper_loop(o)
@@ -84,7 +88,7 @@ function gun_sniper_loop(o)
         end
     end
 
-    if m.heldObj == o and m.intendedMag ~= 0 and m.forwardVel < 30 then
+    if m.heldObj == o and m.intendedMag ~= 0 and m.forwardVel < 35 and (m.action & ACT_FLAG_AIR) == 0 then
         m.forwardVel = m.forwardVel + 1.2
     end
 
@@ -114,23 +118,6 @@ function gun_sniper_loop(o)
         end
     end
 
-
-        --[[
-        if cur_obj_get_dropped() then
-            o.oAction = 1
-            network_send_object(o, true)
-        end
-        
-        if m.action == ACT_THROWING or m.action == ACT_AIR_THROW or m.action == ACT_CROUCHING or m.action == ACT_START_CROUCHING or
-        m.action == ACT_GROUND_POUND or m.action == ACT_SLIDE_KICK or m.action == ACT_CROUCH_SLIDE then
-            cur_obj_move_after_thrown_or_dropped(30, 35)
-            o.oPosY = o.oPosY + 50
-            o.oAction = 3
-            network_send_object(o, true)
-        end
-        ]]
-    
-
     if m.heldObj == o then
         if m.controller.buttonDown & L_TRIG == 0 then
             marioAngle = m.faceAngle.y
@@ -156,16 +143,21 @@ function gun_sniper_loop(o)
             elseif m.character.type == CT_WALUIGI then
                 offset = 60
             end
-            spawn_non_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_MIST, m.pos.x, m.pos.y + offset, m.pos.z, nil)
-            spawn_non_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, m.pos.x, m.pos.y + offset, m.pos.z, nil)
-            spawn_non_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, m.pos.x, m.pos.y + offset, m.pos.z, nil)
+            o.oBulletPosX = m.pos.x
+            o.oBulletPosY = m.pos.y + offset
+            o.oBulletPosZ = m.pos.z
+            o.oGunAngle = m.faceAngle.y
+            spawn_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_MIST, o.oBulletPosX, o.oBulletPosY, o.oBulletPosZ, nil)
+            spawn_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, o.oBulletPosX, o.oBulletPosY, o.oBulletPosZ, function(tracer) tracer.oFaceAngleYaw = o.oGunAngle end)
+            spawn_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, o.oBulletPosX, o.oBulletPosY + 20, o.oBulletPosZ, function(bullet) bullet.oFaceAngleYaw = o.oGunAngle end)
             o.oAmmo = o.oAmmo - 1
             network_play(sGunshot, m.pos, 0.6, m.playerIndex)
+            o.oAction = 2
+
         end
     end
 
-
-    if o.oAmmo == 0 and o.oAction ~= 3 then
+    if o.oAmmo == 0 and o.oAction ~= 3 then --No more ammo, therefore the holding Mario will THROW the gun.
         if m.heldObj == o then
             mario_drop_held_object(m)
             set_mario_action(m, ACT_THROWING, 0)
@@ -177,7 +169,7 @@ function gun_sniper_loop(o)
         end
     end
 
-    if o.oAction == 3 then
+    if o.oAction == 3 then --Gun has been thrown and will explode on impact.
         if o.oPosY > o.oFloorHeight then
             o.oFaceAnglePitch = o.oFaceAnglePitch + 2048
             o.oMoveAnglePitch = o.oFaceAnglePitch
@@ -191,7 +183,6 @@ function gun_sniper_loop(o)
             obj_mark_for_deletion(o)
         end
     end
-
 end
 
 function sniper_smoke_init(o)
@@ -203,7 +194,7 @@ function sniper_smoke_init(o)
 end
 
 function sniper_smoke_loop(o)
-    if o.oTimer == 7 then
+    if o.oTimer == 6 then
         cur_obj_enable_rendering()
     end
     o.oPosY = o.oPosY + 3
@@ -252,7 +243,7 @@ function sniper_bullet_loop(o)
         obj_mark_for_deletion(o)
     elseif o.oMoveFlags & OBJ_MOVE_HIT_WALL ~= 0 then
         --djui_chat_message_create("hit wall!")
-        spawn_sync_object(id_bhvBulletMiss, E_MODEL_NONE, o.oPosX, o.oPosY, o.oPosZ, nil)
+        spawn_non_sync_object(id_bhvBulletMiss, E_MODEL_NONE, o.oPosX, o.oPosY, o.oPosZ, nil)
         obj_mark_for_deletion(o)
     end
 
