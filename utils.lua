@@ -5,10 +5,12 @@
 
 local function autoroll_toggle()
     if network_is_server() and gGlobalSyncTable.autoroll then
-        djui_chat_message_create("Auto-rolling disabled.")
+		djui_popup_create_global("AUTO-ROLLING HAS BEEN DISABLED BY HOST.", 2)
+		--djui_chat_message_create("Auto-rolling disabled.")
         gGlobalSyncTable.autoroll = false
     elseif network_is_server() and gGlobalSyncTable.autoroll == false then
-        djui_chat_message_create("Auto-rolling enabled!")
+		djui_popup_create_global("AUTO-ROLLING HAS BEEN ENABLED BY HOST!", 2)
+        --djui_chat_message_create("Auto-rolling enabled!")
         gGlobalSyncTable.autoroll = true
     elseif not network_is_server() then
         djui_chat_message_create("Option only available for host.")
@@ -16,7 +18,7 @@ local function autoroll_toggle()
 end
 hook_mod_menu_checkbox("Enable Automatic Rolling [HOST]", false, autoroll_toggle)
 
---[[
+--[[ This feature won't work because the command to send out the notifications is done globally.
 local function disable_notifications()
 	if RTDnotifications then
 		RTDnotifications = false
@@ -160,7 +162,12 @@ gSamples = {
 	audio_sample_load("gunshot.ogg"),
 	audio_sample_load("bulletmiss.ogg"),
 	audio_sample_load("bulletsplat.ogg"),
-	audio_sample_load("gunspawn.ogg")
+	audio_sample_load("gunspawn.ogg"),
+	audio_sample_load("ring_collect.ogg"),
+	audio_sample_load("ringdrop.ogg"),
+	audio_sample_load("pin.ogg"),
+	audio_sample_load("explosion.ogg")
+
 }
 
 sBoneBreak = 1
@@ -201,6 +208,10 @@ sGunshot = 35
 sBulletMiss = 36
 sBulletSplat = 37
 sGunspawn = 38
+sRingCollect = 39
+sRingDrop = 40
+sGrenadePin = 41
+sExplosion = 42
 
 --Streams
 moon = audio_stream_load("moon.ogg")
@@ -209,6 +220,7 @@ dance = audio_stream_load("mariodance.ogg")
 gold = audio_stream_load("betterthangold.ogg")
 
 --Custom Models
+E_MODEL_GRENADE = smlua_model_util_get_id("grenade_geo")
 E_MODEL_GUN_SNIPER = smlua_model_util_get_id("gun_sniper_geo")
 E_MODEL_GUN_SNIPER_ACTIVE = smlua_model_util_get_id("gun_sniperActive_geo")
 E_MODEL_GUN_SNIPER_SMOKE = smlua_model_util_get_id("sniper_smoke_geo")
@@ -222,7 +234,10 @@ define_custom_obj_fields({
 	oGunAngle = "s32",
 	oBulletPosX = "s32",
 	oBulletPosY = "s32",
-	oBulletPosZ = "s32"
+	oBulletPosZ = "s32",
+	oAngleFromMario = "s32",
+	oThrowDistance = "u32",
+	oDestroyTimer = "u32"
 })
 
 ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -285,8 +300,10 @@ function act_ragdoll(m)
     if stepResult == AIR_STEP_LANDED then
         if m.floor.type == SURFACE_BURNING then
             set_mario_action(m, ACT_LAVA_BOOST, 0)
-		else
+		elseif m.health ~= 0xff then
 			set_mario_action(m, ACT_FORWARD_GROUND_KB, 0)
+		elseif m.health == 0xFF then
+			set_mario_action(m, ACT_HARD_FORWARD_GROUND_KB, 0)
 		end
 
     end

@@ -1,8 +1,11 @@
 -- name: Roll The Dice! V2.0 [WIP]
--- description: !! WIP MOD - HOSTING THIS ONLINE WILL RESULT IN A PERMANENT ACCOUNT BAN !! \n\nDpad+Up to ROLL THE DICE for a random buff/debuff/random event!    Mod by TheIncredibleHolc
+-- description: Press Dpad+Up to ROLL THE DICE for a random buff, debuff, or special event!\n\nMod by TheIncredibleHolc and contributions from the GORE Team! 
 
--- Disclaimer. This is a crude attempt of a V2 patchup/overhaul of my first mod. This code is ATROCIOUS since I had no idea what I was doing back then.
--- Still, I hope you enjoy it for what it is, and you're welcome to message me on Discord for questions or recommendations! -TheIncredibleHolc
+-- DISCLAIMER! This is a crude attempt of a V2 overhaul of my very first mod. This code is ATROCIOUS since I had no idea what I was doing back then.
+-- With the knowledge that I've gained from making Gore Hardmode and Frogger, I'm carrying over a lot of QoL fixes to this old mod. 
+-- Custom networking audio engine (as used in Gore mods) provided by CoolioKid956. Thanks Coolio! 
+
+-- I hope you enjoy the mode, and you're welcome to message me on Discord for questions or recommendations! -TheIncredibleHolc
 
 ------Variables n' stuff------
 moontimer = 0
@@ -36,7 +39,7 @@ clusterbombexplosions = 0
 clusterbombtimer2 = 0
 alwaysrunning = 0
 alwaysrunningtimer = 0
-welcomeprompt = 0
+welcomeprompt = 1
 
 gGlobalSyncTable.autoroll = false
 
@@ -65,14 +68,6 @@ local texwelcome = get_texture_info('welcome')
 
 
 --------functions--------
---[[running = 0
-function testing()
-    m = gMarioStates[0]
-    if m.controller.buttonDown & D_JPAD ~= 0 then
-    end
-end
-hook_event(HOOK_UPDATE, testing)
-]]
 
 function RTDclock (m)
     if not dead then
@@ -257,13 +252,13 @@ function rtd(m)
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
             rerolling = false
-            RandomEvent = math_random(32,32)
+            RandomEvent = math_random(33,33)
             if not gGlobalSyncTable.autoroll then
                 rtdtimer = 30 * 10 --10 seconds
             else
                 rtdtimer = 30 * 15 --15 seconds. Cuz autoroll gets really busy really fast.
             end
-            if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (DONE)
+            if (RandomEvent) == 1 then --Mario Trips and breaks his leg, can't jump for 5 seconds (Updated!)
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " broke his leg!", 1)
@@ -271,7 +266,7 @@ function rtd(m)
                 brokenleg = 1
                 fivesecondcount = 1 --1 means "on"
             end
-            if (RandomEvent) == 2 then --Mario goes to the MOON! (DONE)
+            if (RandomEvent) == 2 then --Mario goes to the MOON! (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " went to the moon!", 1)
                 fadeout_music(0)
                 moontimer = 30 * 17
@@ -279,12 +274,12 @@ function rtd(m)
                 play_secondary_music(0,0,0,0)
                 stream_play(moon)
             end
-            if (RandomEvent) == 3 then --Mario does a backflip.(DONE)
+            if (RandomEvent) == 3 then --Mario does a backflip.(Original)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " did a sick backflip!", 1)
                 network_play(sSpecial, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_BACKFLIP, 0)
             end
-            if (RandomEvent) == 4 then --Mario gets struck by lightning! (DONE)
+            if (RandomEvent) == 4 then --Mario gets struck by lightning! (Updated!)
                 lightningstrike = 1
                 spawn_sync_object(id_bhvLightning, E_MODEL_LIGHTNING, m.pos.x, m.pos.y + 400, m.pos.z, nil)
                 network_play(sThunder, m.pos, 1, m.playerIndex)
@@ -293,13 +288,12 @@ function rtd(m)
                     set_mario_action(gMarioStates[0], ACT_SHOCKED, 0)
                 else
                     set_mario_action(m, ACT_THROWN_FORWARD, 0)
-                    m.squishTimer = 50
                 end
                 gMarioStates[0].health = gMarioStates[0].health - 1024
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got struck by lightning!", 1)
 
             end
-            if (RandomEvent) == 5 then --TONS OF COINS! (DONE)
+            if (RandomEvent) == 5 then --TONS OF COINS! (Original)
                 djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " gives RICHES AND GLORY FOR ALL!", 1)
                 for i = 0, 240 do
                     if m.playerIndex ~= 0 then return end
@@ -309,7 +303,7 @@ function rtd(m)
                     spawn_sync_object(id_bhv1upRunningAway,E_MODEL_1UP,m.pos.x, m.pos.y - 50, m.pos.z,nil)
                 end
             end
-            if (RandomEvent) == 6 then --Mario has to jump in water or he EXPLODES! (DONE)
+            if (RandomEvent) == 6 then --Mario has to jump in water or he EXPLODES! (Updated!)
                 fadeout_music(0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is about to blow up!", 1)
                 network_play(sNEScastle, m.pos, 1, m.playerIndex)
@@ -318,7 +312,7 @@ function rtd(m)
                 eightsecondcount = 1
                 
             end
-            if (RandomEvent) == 7 then --Mario gets sucked into the earth. (DONE)
+            if (RandomEvent) == 7 then --Mario gets sucked into the earth. (Updated!)
                 local random = math.random(1,5)
                 if random == 5 then
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " was sucked into the ground!", 1)
@@ -327,7 +321,7 @@ function rtd(m)
                     reroll()
                 end
             end
-            if (RandomEvent) == 8 then --Mario gets a coin jackpot! (DONE)
+            if (RandomEvent) == 8 then --Mario gets a coin jackpot! (Original)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " won the lottery!", 1)
                 network_play(sJackpot, m.pos, 1, m.playerIndex)
                 spawn_sync_object(id_bhvMovingYellowCoin, E_MODEL_YELLOW_COIN, m.pos.x + 50, m.pos.y + 100, m.pos.z, nil)
@@ -363,7 +357,7 @@ function rtd(m)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x, m.pos.y + 200, m.pos.z - 50, nil)
                 spawn_sync_object(id_bhvBlueCoinJumping, E_MODEL_BLUE_COIN, m.pos.x + 50, m.pos.y + 200, m.pos.z - 50, nil)
             end
-            if (RandomEvent) == 9 then --Mario spawns a cheeseburger, green demon, or 1-up chaser!(DONE)
+            if (RandomEvent) == 9 then --Mario spawns a cheeseburger, green demon, or 1-up chaser!(Updated!)
                 mushroomrandom = math.random(1,3)
                 if (mushroomrandom) == 1 then --Mario gets a 1-up!
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a 1-UP!", 1)
@@ -411,7 +405,7 @@ function rtd(m)
                     end
                 end
             end
-            if (RandomEvent) == 10 then --Mario gets low gravity!(DONE)
+            if (RandomEvent) == 10 then --Mario gets low gravity!(Updated!)
                 lowgravity = 1
                 fadeout_music(0)
                 stream_play(metalcap)
@@ -419,7 +413,7 @@ function rtd(m)
                 eightsecondcount = 1
                 RandomEvent = 0
             end
-            if (RandomEvent) == 11 then --Goomba-pacalypse!! (DONE)
+            if (RandomEvent) == 11 then --Enemy apacalypse!! (Updated!)
                 local m = gMarioStates[0]
                 local random = math.random(1,2)
                 network_play(sHomer, m.pos, 1, m.playerIndex)
@@ -443,7 +437,7 @@ function rtd(m)
                     end
                 end
             end
-            if (RandomEvent) == 12 then --Mario becomes INVISIBLE! (DONE)
+            if (RandomEvent) == 12 then --Mario becomes INVISIBLE! (New!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is invisible!", 1)
                 s.invisible = 1
                 gPlayerSyncTable[m.playerIndex].invisible = true
@@ -451,36 +445,54 @@ function rtd(m)
                 spawn_mist_particles()
                 --set_mario_action(m, ACT_INVISIBLE, 0)
             end
-            if (RandomEvent) == 13 then --Spawns a random enemy! (DONE)
+            if (RandomEvent) == 13 then --Spawns a random enemy! (Updated!)
                 local randomenemy = math.random(1,6)
                 if randomenemy == 1 then
-                    spawn_sync_object(id_bhvBigBully,E_MODEL_BULLY_BOSS,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvBigBully,E_MODEL_BULLY_BOSS,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a big bully!", 1)
                 elseif randomenemy == 2 then
-                    spawn_sync_object(id_bhvBulletBill,E_MODEL_BULLET_BILL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvBulletBill,E_MODEL_BULLET_BILL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a bullet bill!", 1)
                 elseif randomenemy == 3 then
-                    spawn_sync_object(id_bhvHeaveHo,E_MODEL_HEAVE_HO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvHeaveHo,E_MODEL_HEAVE_HO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a heave-ho!", 1)
                 elseif randomenemy == 4 then
-                    spawn_sync_object(id_bhvSmallWhomp,E_MODEL_WHOMP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvSmallWhomp,E_MODEL_WHOMP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a whomp!", 1)
                 elseif randomenemy == 5 then
-                    spawn_sync_object(id_bhvMadPiano,E_MODEL_MAD_PIANO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvMadPiano,E_MODEL_MAD_PIANO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a piano!", 1)
                 elseif randomenemy == 6 then
-                    spawn_sync_object(id_bhvChuckya,E_MODEL_CHUCKYA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
+                    spawn_sync_object(id_bhvChuckya,E_MODEL_CHUCKYA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                        enemy.oFaceAnglePitch = 0
+                        enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
+                    end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a chuckya!", 1)
                 end
             end
-            if (RandomEvent) == 14 then --Mario gets MOONJUMP!(DONE)
+            if (RandomEvent) == 14 then --Mario gets MOONJUMP!(Original)
                 network_play(sMoonjump, m.pos, 1, m.playerIndex)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got MOON JUMP!", 1)
                 moonjump = 1
                 RandomEvent = 0
                 eightsecondcount = 1
             end
-            if (RandomEvent) == 15 then --Mario freaks out and throws his cap. Regenerates cap if no cap. (DONE)
+            if (RandomEvent) == 15 then --Mario freaks out and throws his cap. Regenerates cap if no cap. (Original)
                 if m.flags & MARIO_CAP_ON_HEAD ~= 0 then
                     if m.character.type == CT_MARIO then
                         network_play(sAngrymario, m.pos, 1, m.playerIndex)
@@ -505,35 +517,39 @@ function rtd(m)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " found a replacement cap!", 1)
                 end
             end
-            if (RandomEvent) == 16 then --Randomized mario's health. (DONE)
-                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got randomized health!", 1)
-                randomhealth = 1
+            if (RandomEvent) == 16 then --Randomized mario's health. (Original)
+                if not gGlobalSyncTable.floodenabled then
+                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got randomized health!", 1)
+                    randomhealth = 1
+                else
+                    reroll()
+                end
             end
-            if (RandomEvent) == 17 then --Teleport Mario to a random location (DONE)
+            if (RandomEvent) == 17 then --Teleport Mario to a random location (New!)
                 local s = gStateExtras[0]
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " used an Ender Pearl!", 1)
                 s.enderpearl = true
             end
-            if (RandomEvent) == 18 then --Mario gets koopa shell! (DONE)
+            if (RandomEvent) == 18 then --Mario gets koopa shell! (Original)
                 local_play(sSuccess, m.pos, 1)
                 spawn_sync_object(id_bhvKoopaShell,E_MODEL_KOOPA_SHELL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200,nil)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got a koopa shell!", 1)
             end
-            if (RandomEvent) == 19 then --Mario breakdances! (DONE)
+            if (RandomEvent) == 19 then --Mario breakdances! (Updated!)
                 fadeout_music(0)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is showing their moves!", 1)
                 stream_play(dance)
                 set_mario_action(m, ACT_PUNCHING, 9) --breakdance
                 mariospin = 1
             end
-            if (RandomEvent) == 20 then --8 seconds of SPEED! (DONE)
+            if (RandomEvent) == 20 then --8 seconds of SPEED! (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled super speed!", 1)
                 fadeout_music(3)
                 stream_play(gold)
                 marioboostrtd = 1
                 eightsecondcount = 1
             end
-            if (RandomEvent) == 21 then --Spawn a lit bob-omb in Marios hands! (DONE)
+            if (RandomEvent) == 21 then --Spawn a lit bob-omb in Marios hands! (Original)
                 spawnedenemy = math.random(2,3)
                 if (spawnedenemy) == 1 then --Spawn King Bobomb in Marios hand.
                     djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " picked up KING BOBOMB!", 1)
@@ -580,7 +596,7 @@ function rtd(m)
                     set_mario_action(m, ACT_HOLD_IDLE, 0)
                 end
             end
-            if (RandomEvent) == 22 then --Free random cap! (DONE)
+            if (RandomEvent) == 22 then --Free random cap! (Original)
                 randomcap = math.random(1,4)
                 if (randomcap) == 1 then --metal cap
                     local_play(sSuccess, m.pos, 1)
@@ -605,26 +621,26 @@ function rtd(m)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got ALL 3 CAPS!", 1)
                 end
             end
-            if (RandomEvent) == 23 then --Mario sharts himself (DONE)
+            if (RandomEvent) == 23 then --Mario Shart 64 (New!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is sharting!", 1)
                 s.sharting = true
                 set_mario_action(m, ACT_SHART, 0)
                 network_play(sShart, m.pos, 1, m.playerIndex)
                 RandomEvent = 0
             end
-            if (RandomEvent) == 24 then --Mario gets a troll face that blocks view for 8 seconds(DONE)
+            if (RandomEvent) == 24 then --Mario gets a troll face that blocks view for 8 seconds (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is getting trolled!", 1)
                 local_play(sTroll, m.pos, 1)
                 blind = 1
                 fivesecondcount = 1
                 RandomEvent = 0
             end
-            if (RandomEvent) == 25 then --Clusterbomb! Spawn explosions everywhere. (DONE)
+            if (RandomEvent) == 25 then --Clusterbomb! Spawn explosions everywhere. (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " dropped a cluster bomb!", 1)
                 network_play(sKa, m.pos, 1, m.playerIndex)
                 clusterbomb = 1
             end
-            if (RandomEvent) == 26 then --Mario falls asleep for 5 seconds. (DONE)
+            if (RandomEvent) == 26 then --Mario falls asleep for 5 seconds. (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
                 play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
                 mariosleepcounter = 0
@@ -632,20 +648,24 @@ function rtd(m)
                 marioasleep = 1
                 RandomEvent = 0
             end
-            if (RandomEvent) == 27 then --Mega fart shockwave. (DONE)
+            if (RandomEvent) == 27 then --Mega fart shockwave. (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " unleashed a fart shockwave!", 1)
                 network_play(sFart, m.pos, 1, m.playerIndex)
                 spawn_mist_particles()
-                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z,nil)
+                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z, function (shockwave) 
+                    shockwave.oFaceAnglePitch = 0
+                    shockwave.oFaceAngleRoll = 0
+                    shockwave.oBehParams = 4
+                end)
                 RandomEvent = 0
             end
-            if (RandomEvent) == 28 then --FLING! (DONE)
+            if (RandomEvent) == 28 then --FLING! (New!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got yeeted!", 1)
                 spawn_mist_particles()
                 rtd_fling()
                 RandomEvent = 0
             end
-            if (RandomEvent) == 29 then --Mario gets CANNON'ed! (DONE!)
+            if (RandomEvent) == 29 then --Mario gets CANNON'ed! (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a cannon!", 1)
                 m.pos.y = m.pos.y + 1000
                 m.forwardVel = 0
@@ -659,7 +679,7 @@ function rtd(m)
                 end)
                 
             end
-            if (RandomEvent) == 30 then --FOV Stretch (DONE!)
+            if (RandomEvent) == 30 then --FOV Stretch (New!)
                 if gGlobalSyncTable.floodenabled then
                     --reroll because flood breaks the fov
                     if not gGlobalSyncTable.autoroll then
@@ -676,7 +696,7 @@ function rtd(m)
                     RandomEvent = 0
                 end
             end
-            if (RandomEvent) == 31 then --Teleports you to a random nearby player! (DONE)
+            if (RandomEvent) == 31 then --Teleports you to a random nearby player! (New!)
                 local targetIndex = get_random_nearby_player()
                 if targetIndex == nil then
                     reroll()
@@ -689,17 +709,54 @@ function rtd(m)
                 end
                 RandomEvent = 0
             end
-            if (RandomEvent) == 32 then --Sniper Rifle! ()
+            if (RandomEvent) == 32 then --Sniper Rifle! (New!)
                 local np = gNetworkPlayers[0]
-                local chancespawn = math.random(1,2)
-                if chancespawn == 2 then --This comes out to a 50% chance that the gun will spawn.
-                    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " HAS A GUN!!", 1)
-                    spawn_sync_object(id_bhvSniper, E_MODEL_GUN_SNIPER, m.pos.x, m.pos.y, m.pos.z, nil)
-                    network_play(sGunspawn, m.pos, 1, m.playerIndex)
-                    RandomEvent = 0
-                else
-                    reroll()
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " HAS A GUN!!", 1)
+                spawn_sync_object(id_bhvSniper, E_MODEL_GUN_SNIPER, m.pos.x, m.pos.y, m.pos.z, nil)
+                network_play(sGunspawn, m.pos, 0.9, m.playerIndex)
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 33 then --Grenade! (New!)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " HAS A GRENADE!", 1)
+                spawn_sync_object(id_bhvGrenade, E_MODEL_GRENADE, m.pos.x, m.pos.y, m.pos.z, nil)
+                network_play(sGunspawn, m.pos, 0.9, m.playerIndex)
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 34 then --Mario drops rings (New!)
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " lost his rings!", 1)
+                local ringcount = math.random(30,60)
+                m.pos.y = m.pos.y + 5
+                m.vel.y = 35
+                m.forwardVel = -10
+                set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
+                play_character_sound(m, CHAR_SOUND_ATTACKED)
+                network_play(sRingDrop, m.pos, 0.8, m.playerIndex)
+
+                m.particleFlags = PARTICLE_19 | PARTICLE_DIRT | PARTICLE_HORIZONTAL_STAR | PARTICLE_TRIANGLE
+                for i = 1, ringcount do
+                    local radius = 120
+                    local angle = i * (2 * math.pi) / ringcount
+                    local x = m.pos.x + radius * math.cos(angle)
+                    local z = m.pos.z + radius * math.sin(angle)
+    
+                    spawn_sync_object(id_bhvRing, E_MODEL_RING, x, m.pos.y, z, function(ring)
+                        local angletomario = obj_angle_to_object(m.marioObj, ring)
+                        if angletomario > 0 then
+                            angletomario = angletomario*1
+                        else
+                            angletomario = angletomario*1
+                        end
+                        ring.oAngleToMario = angletomario
+                    end)
                 end
+                
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 35 then --Template for a new event in case you (yes, YOU!) wanted to add something into the mix. Disabled by default. See the notes below!
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled a new event!", 1)
+                --Put all your code here! 
+                --Be sure to also update the RTD Picker on line 260 to include 33 (or however many more you add) events!
+                RandomEvent = 0
             end
         elseif gGlobalSyncTable.autoroll then
             --This blank spot prevents Nope sound from playing 30 times per second when auto-roll is enabled.
@@ -1048,17 +1105,34 @@ function mario_update(m)
 
     --Mario Broken Leg
     if brokenleg == 1 then
-        if (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_THROWN_FORWARD) or (m.controller.buttonPressed & A_BUTTON ~= 0 and m.action ~= ACT_BACKWARD_AIR_KB) then
-            if m.action == ACT_JUMP or m.action == ACT_SIDE_FLIP then
+        local m = gMarioStates[0]
+
+        if m.action ~= ACT_THROWN_FORWARD and m.action ~= ACT_HARD_FORWARD_AIR_KB then
+            if m.forwardVel > 30 and m.action & ACT_FLAG_BUTT_OR_STOMACH_SLIDE == 0 then
+                m.forwardVel = m.forwardVel - 25
                 network_play(sBoneBreak, m.pos, 1, m.playerIndex)
                 set_mario_action(m, ACT_THROWN_FORWARD, 0)
-            elseif m.action == ACT_BACKFLIP then
-                network_play(sBoneBreak, m.pos, 1, m.playerIndex)
-                set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
+            end
+        end
+
+        if m.controller.buttonPressed & A_BUTTON ~= 0 then
+            if m.action ~= ACT_THROWN_FORWARD and m.action ~= ACT_BACKWARD_AIR_KB and m.action ~= ACT_HARD_FORWARD_AIR_KB then
+                if m.action == ACT_JUMP or m.action == ACT_SIDE_FLIP or m.forwardVel > 35 then
+                    network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                    set_mario_action(m, ACT_THROWN_FORWARD, 0)
+                end
+                if m.action == ACT_BACKFLIP or m.action == ACT_SLIDE_KICK then
+                    network_play(sBoneBreak, m.pos, 1, m.playerIndex)
+                    set_mario_action(m, ACT_BACKWARD_AIR_KB, 0)
+                end
+                if m.action == ACT_LONG_JUMP then
+                    m.pos.y = m.pos.y + 20
+                    m.forwardVel = 40
+                    set_mario_action(m, ACT_HARD_FORWARD_AIR_KB, 0)
+                end
             end
         end
     end
-
     --Mario defusing in water
     if (mariofuse) == 1 then
         if m.playerIndex ~= 0 then return end
@@ -1117,13 +1191,18 @@ function hud_timers()
 
     --Welcome prompt
     if (welcomeprompt) == 1 then
-        if m.marioObj.oTimer >= 150 or (gMarioStates[0].controller.buttonPressed & U_JPAD) ~= 0 then
+        if m.marioObj.oTimer >= 500 or (m.controller.buttonPressed & U_JPAD) ~= 0 then
             welcomeprompt = 0
         end
     end
     if (welcomeprompt) == 1 then
-        djui_hud_set_resolution(RESOLUTION_N64);
-        djui_hud_render_texture(texwelcome, 105, 14, .4, .4)
+        local sh = djui_hud_get_screen_height()
+        local wh = 512
+
+        djui_hud_set_resolution(RESOLUTION_DJUI)
+        djui_hud_set_filter(FILTER_LINEAR)
+        djui_hud_render_texture(texwelcome, ((screenWidth-wh))/2, ((screenHeight-wh))/2, 1, 1)
+
     end
 
     --HUD Ammo counter
@@ -1297,9 +1376,6 @@ function hud_timers()
     end
 
 end
-
-
-
 
 local function before_set_mario_action(m,action)
     if m.playerIndex ~= 0 then return end
