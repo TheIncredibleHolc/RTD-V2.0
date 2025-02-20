@@ -1,9 +1,9 @@
 -- name: Roll The Dice! V2.0 [WIP]
--- description: Press Dpad+Up to ROLL THE DICE for a random buff, debuff, or special event!\n\nMod by TheIncredibleHolc and contributions from the GORE Team! 
+-- description: Press Dpad+Up to ROLL THE DICE for a random buff, debuff, or special event!\n\nMod by TheIncredibleHolc and contributions from the GORE Team!
 
 -- DISCLAIMER! This is a crude attempt of a V2 overhaul of my very first mod. This code is ATROCIOUS since I had no idea what I was doing back then.
--- With the knowledge that I've gained from making Gore Hardmode and Frogger, I'm carrying over a lot of QoL fixes to this old mod. 
--- Custom networking audio engine (as used in Gore mods) provided by CoolioKid956. Thanks Coolio! 
+-- With the knowledge that I've gained from making Gore Hardmode and Frogger, I'm carrying over a lot of QoL fixes to this old mod.
+-- Custom networking audio engine (as used in Gore mods) provided by CoolioKid956. Thanks Coolio!
 
 -- I hope you enjoy the mode, and you're welcome to message me on Discord for questions or recommendations! -TheIncredibleHolc
 
@@ -15,10 +15,6 @@ randomhealthtimer = 0
 brokenleg = 0
 brokenlegtimer = 0
 rtdtimer = 1
-fivesecondcount = 0
-fivesecondtimer = 0
-eightsecondcount = 0 
-eightsecondtimer = 0
 lightningcounter = 0
 angrycounter = 0
 firstpress = 0
@@ -39,40 +35,48 @@ clusterbombexplosions = 0
 clusterbombtimer2 = 0
 alwaysrunning = 0
 alwaysrunningtimer = 0
+megamushroom = 0
 welcomeprompt = 1
+rtdstall = 0
 
 gGlobalSyncTable.autoroll = false
 
 --------locals--------
 local network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math_floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math_random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence = network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math.floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math.random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence
-texInfo = get_texture_info('rtd')
-texexplosion = get_texture_info('fuselit')
-texexplosion2 = get_texture_info('touchwater')
-texlowgravity = get_texture_info('lowgravity')
-texspeed = get_texture_info('speed')
-tex8 = get_texture_info('8')
-tex7 = get_texture_info('7')
-tex6 = get_texture_info('6')
-tex5 = get_texture_info('5')
-tex4 = get_texture_info('4')
-tex3 = get_texture_info('3')
-tex2 = get_texture_info('2')
-tex1 = get_texture_info('1')
-texlightning = get_texture_info('lightning')
-texbrokenleg = get_texture_info('brokenleg')
-texmoonjump = get_texture_info('moonjump')
-textroll = get_texture_info('troll')
-textrollhud = get_texture_info('trollhud')
-texsleep = get_texture_info('sleep')
-texwelcome = get_texture_info('welcome')
+local texInfo = get_texture_info('rtd')
+local texexplosion = get_texture_info('fuselit')
+local texexplosion2 = get_texture_info('touchwater')
+local texlowgravity = get_texture_info('lowgravity')
+local texspeed = get_texture_info('speed')
+local texlightning = get_texture_info('lightning')
+local texbrokenleg = get_texture_info('brokenleg')
+local texmoonjump = get_texture_info('moonjump')
+local textroll = get_texture_info('troll')
+local textrollhud = get_texture_info('trollhud')
+local texsleep = get_texture_info('sleep')
+local texwelcome = get_texture_info('welcome')
 
+counter_stuff = {
+    display_number_time = 0,
+    counter_func = nil
+}
+
+--------playersynctable--------
+
+for i = 0, MAX_PLAYERS - 1 do
+    gPlayerSyncTable[i].megamushroom = false
+    gPlayerSyncTable[i].megamushroomscale = 1
+    gPlayerSyncTable[i].powerup_timer = 1
+end
 
 --------functions--------
 
 function RTDclock (m)
-    if not dead then
+    if not dead and rtdstall == 0 then
         rtdtimer = rtdtimer - 1
     end
+
+    rtdstall = clampf(rtdstall - 1, 0, math.huge)
 end
 
 function mariobrokenleg (m)
@@ -98,90 +102,46 @@ function moonclock (m)
     end
 end
 
-function fivesecondcountdown (m)
-    if (fivesecondcount) == 1 then
-        if (fivesecondtimer) <= 30 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex5, 38, 40, .2, .2)
-            fivesecondtimer = fivesecondtimer + 1
-        end
-        if (fivesecondtimer) <= 60 and (fivesecondtimer) > 30 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex4, 38, 40, .2, .2)
-            fivesecondtimer = fivesecondtimer + 1
-        end 
-        if (fivesecondtimer) <= 90 and (fivesecondtimer) > 60 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex3, 38, 40, .2, .2)
-            fivesecondtimer = fivesecondtimer + 1
-        end
-        if (fivesecondtimer) <= 120 and (fivesecondtimer) > 90 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex2, 38, 40, .2, .2)
-            fivesecondtimer = fivesecondtimer + 1
-        end
-        if (fivesecondtimer) <= 150 and (fivesecondtimer) > 120 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex1, 38, 40, .2, .2)
-            fivesecondtimer = fivesecondtimer + 1
-        end
-        if (fivesecondtimer) == 151 then
-            fivesecondtimer = 0
-            fivesecondcount = 0
+function display_countdown()
+    if counter_stuff.display_number_time ~= 0 then
+        local time_string = tostring(math.floor(counter_stuff.display_number_time / 30))
+        local number_textures = {
+            [1] = {tex = get_texture_info('1'), color = {r = 255, g = 46, b = 46}},
+            [2] = {tex = get_texture_info('2'), color = {r = 53, g = 255, b = 46}},
+            [3] = {tex = get_texture_info('3'), color = {r = 46, g = 49, b = 255}},
+            [4] = {tex = get_texture_info('4'), color = {r = 210, g = 255, b = 46}},
+            [5] = {tex = get_texture_info('5'), color = {r = 255, g = 46, b = 46}},
+            [6] = {tex = get_texture_info('6'), color = {r = 53, g = 255, b = 46}},
+            [7] = {tex = get_texture_info('7'), color = {r = 46, g = 49, b = 255}},
+            [8] = {tex = get_texture_info('8'), color = {r = 210, g = 255, b = 46}},
+            [9] = {tex = get_texture_info('9'), color = {r = 255, g = 46, b = 46}},
+            [0] = {tex = get_texture_info('0'), color = {r = 53, g = 255, b = 46}}
+        }
+
+        djui_hud_set_resolution(RESOLUTION_N64);
+
+        for i = 1, string.len(time_string) do
+            local display_number = number_textures[tonumber(string.sub(time_string, i, i))]
+            local width_offset = 16 * (i - 1)
+
+            djui_hud_set_color(display_number.color.r, display_number.color.g, display_number.color.b, 255)
+
+            djui_hud_render_texture(display_number.tex, 38 + width_offset, 40, 0.25, 0.25)
         end
     end
+
+    if counter_stuff.counter_func and counter_stuff.display_number_time == 0 then
+        counter_stuff.counter_func()
+        counter_stuff.counter_func = nil
+    end
+
+    counter_stuff.display_number_time = clampf(counter_stuff.display_number_time - 1, 0, math.huge)
 end
 
-function eightsecondcountdown (m)
-    if (eightsecondcount) == 1 then
-        eightsecondtimer = eightsecondtimer + 1
-        if (lowgravity) == 1 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(texlowgravity, 20, 33, .1, .1)
-        end
-        if (eightsecondtimer) <= 30 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex8, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 60 and (eightsecondtimer) > 30 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex7, 38, 40, .2, .2)
-        end 
-        if (eightsecondtimer) <= 90 and (eightsecondtimer) > 60 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex6, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 120 and (eightsecondtimer) > 90 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex5, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 150 and (eightsecondtimer) > 120 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex4, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 180 and (eightsecondtimer) > 150 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex3, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 210 and (eightsecondtimer) > 180 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex2, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 240 and (eightsecondtimer) > 210 then
-            djui_hud_set_resolution(RESOLUTION_N64);
-            djui_hud_render_texture(tex1, 38, 40, .2, .2)
-        end
-        if (eightsecondtimer) <= 270 and (eightsecondtimer) > 240 then
-
-        end
-        if (eightsecondtimer) == 270 then
-            eightsecondtimer = 0
-            eightsecondcount = 0
-            set_background_music(0, get_current_background_music(), 0)
-            if (lowgravity) == 1 then
-                lowgravity = 0
-            end
-        end
+local function reset_music_and_turn_off_low_gravity()
+    set_background_music(0, get_current_background_music(), 0)
+    if (lowgravity) == 1 then
+        lowgravity = 0
     end
 end
 
@@ -252,7 +212,7 @@ function rtd(m)
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
             rerolling = false
-            RandomEvent = math_random(33,33)
+            RandomEvent = 35
             if not gGlobalSyncTable.autoroll then
                 rtdtimer = 30 * 10 --10 seconds
             else
@@ -264,7 +224,7 @@ function rtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " broke his leg!", 1)
                 brokenlegtimer = 0
                 brokenleg = 1
-                fivesecondcount = 1 --1 means "on"
+                count_with_function_at_end(150, nil)
             end
             if (RandomEvent) == 2 then --Mario goes to the MOON! (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " went to the moon!", 1)
@@ -309,8 +269,8 @@ function rtd(m)
                 network_play(sNEScastle, m.pos, 1, m.playerIndex)
                 play_secondary_music(0,0,0,0)
                 mariofuse = 1
-                eightsecondcount = 1
-                
+
+                count_with_function_at_end(240, reset_music_and_turn_off_low_gravity)
             end
             if (RandomEvent) == 7 then --Mario gets sucked into the earth. (Updated!)
                 local random = math.random(1,5)
@@ -410,7 +370,8 @@ function rtd(m)
                 fadeout_music(0)
                 stream_play(metalcap)
                 djui_popup_create_global(tostring(gNetworkPlayers[gMarioStates[0].playerIndex].name) .. " has low gravity!", 1)
-                eightsecondcount = 1
+                count_with_function_at_end(240, reset_music_and_turn_off_low_gravity)
+
                 RandomEvent = 0
             end
             if (RandomEvent) == 11 then --Enemy apacalypse!! (Updated!)
@@ -441,44 +402,44 @@ function rtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is invisible!", 1)
                 s.invisible = 1
                 gPlayerSyncTable[m.playerIndex].invisible = true
-                eightsecondcount = 1
+                count_with_function_at_end(240, reset_music_and_turn_off_low_gravity)
                 spawn_mist_particles()
                 --set_mario_action(m, ACT_INVISIBLE, 0)
             end
             if (RandomEvent) == 13 then --Spawns a random enemy! (Updated!)
                 local randomenemy = math.random(1,6)
                 if randomenemy == 1 then
-                    spawn_sync_object(id_bhvBigBully,E_MODEL_BULLY_BOSS,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvBigBully,E_MODEL_BULLY_BOSS,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a big bully!", 1)
                 elseif randomenemy == 2 then
-                    spawn_sync_object(id_bhvBulletBill,E_MODEL_BULLET_BILL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvBulletBill,E_MODEL_BULLET_BILL,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a bullet bill!", 1)
                 elseif randomenemy == 3 then
-                    spawn_sync_object(id_bhvHeaveHo,E_MODEL_HEAVE_HO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvHeaveHo,E_MODEL_HEAVE_HO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a heave-ho!", 1)
                 elseif randomenemy == 4 then
-                    spawn_sync_object(id_bhvSmallWhomp,E_MODEL_WHOMP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvSmallWhomp,E_MODEL_WHOMP,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a whomp!", 1)
                 elseif randomenemy == 5 then
-                    spawn_sync_object(id_bhvMadPiano,E_MODEL_MAD_PIANO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvMadPiano,E_MODEL_MAD_PIANO,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
                     djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " spawned a piano!", 1)
                 elseif randomenemy == 6 then
-                    spawn_sync_object(id_bhvChuckya,E_MODEL_CHUCKYA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy) 
+                    spawn_sync_object(id_bhvChuckya,E_MODEL_CHUCKYA,gMarioStates[0].pos.x + 200,gMarioStates[0].pos.y + 200,gMarioStates[0].pos.z + 200, function(enemy)
                         enemy.oFaceAnglePitch = 0
                         enemy.oMoveAnglePitch = enemy.oFaceAnglePitch
                     end)
@@ -490,7 +451,7 @@ function rtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " got MOON JUMP!", 1)
                 moonjump = 1
                 RandomEvent = 0
-                eightsecondcount = 1
+                count_with_function_at_end(240, reset_music_and_turn_off_low_gravity)
             end
             if (RandomEvent) == 15 then --Mario freaks out and throws his cap. Regenerates cap if no cap. (Original)
                 if m.flags & MARIO_CAP_ON_HEAD ~= 0 then
@@ -547,7 +508,7 @@ function rtd(m)
                 fadeout_music(3)
                 stream_play(gold)
                 marioboostrtd = 1
-                eightsecondcount = 1
+                count_with_function_at_end(240, reset_music_and_turn_off_low_gravity)
             end
             if (RandomEvent) == 21 then --Spawn a lit bob-omb in Marios hands! (Original)
                 spawnedenemy = math.random(2,3)
@@ -586,7 +547,7 @@ function rtd(m)
                     spawnedenemybhv = id_bhvBobomb
                     spawnedenemymodel = E_MODEL_BLACK_BOBOMB
                 end
-                local obj = spawn_sync_object(spawnedenemybhv, spawnedenemymodel, m.pos.x + 100, m.pos.y, m.pos.z, function(obj) 
+                local obj = spawn_sync_object(spawnedenemybhv, spawnedenemymodel, m.pos.x + 100, m.pos.y, m.pos.z, function(obj)
                     obj.oFlags = OBJ_FLAG_HOLDABLE
                     obj.oInteractType = obj.oInteractType | INTERACT_GRABBABLE
                 end)
@@ -632,8 +593,9 @@ function rtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " is getting trolled!", 1)
                 local_play(sTroll, m.pos, 1)
                 blind = 1
-                fivesecondcount = 1
                 RandomEvent = 0
+
+                count_with_function_at_end(150, nil)
             end
             if (RandomEvent) == 25 then --Clusterbomb! Spawn explosions everywhere. (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " dropped a cluster bomb!", 1)
@@ -644,15 +606,16 @@ function rtd(m)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " fell asleep!", 1)
                 play_sound(SOUND_MARIO_IMA_TIRED, gMarioStates[0].marioObj.header.gfx.cameraToObject)
                 mariosleepcounter = 0
-                fivesecondcount = 1
                 marioasleep = 1
                 RandomEvent = 0
+
+                count_with_function_at_end(150, nil)
             end
             if (RandomEvent) == 27 then --Mega fart shockwave. (Updated!)
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " unleashed a fart shockwave!", 1)
                 network_play(sFart, m.pos, 1, m.playerIndex)
                 spawn_mist_particles()
-                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z, function (shockwave) 
+                spawn_sync_object(id_bhvBowserShockWave, E_MODEL_BOWSER_WAVE,gMarioStates[0].pos.x,gMarioStates[0].pos.y + 60,gMarioStates[0].pos.z, function (shockwave)
                     shockwave.oFaceAnglePitch = 0
                     shockwave.oFaceAngleRoll = 0
                     shockwave.oBehParams = 4
@@ -677,7 +640,6 @@ function rtd(m)
                     obj.oBehParams2ndByte = 2
                     obj.oAction = 3
                 end)
-                
             end
             if (RandomEvent) == 30 then --FOV Stretch (New!)
                 if gGlobalSyncTable.floodenabled then
@@ -738,7 +700,7 @@ function rtd(m)
                     local angle = i * (2 * math.pi) / ringcount
                     local x = m.pos.x + radius * math.cos(angle)
                     local z = m.pos.z + radius * math.sin(angle)
-    
+
                     spawn_sync_object(id_bhvRing, E_MODEL_RING, x, m.pos.y, z, function(ring)
                         local angletomario = obj_angle_to_object(m.marioObj, ring)
                         if angletomario > 0 then
@@ -749,12 +711,30 @@ function rtd(m)
                         ring.oAngleToMario = angletomario
                     end)
                 end
-                
+
                 RandomEvent = 0
             end
-            if (RandomEvent) == 35 then --Template for a new event in case you (yes, YOU!) wanted to add something into the mix. Disabled by default. See the notes below!
+            if (RandomEvent) == 35 then --Mario gets huyge new!
+                djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " became HUGE!!!", 1)
+                fadeout_music(0)
+                play_secondary_music(0,0,0,0)
+                stream_play(mega)
+                network_play(sGrow, m.pos, 1, m.playerIndex)
+
+                gPlayerSyncTable[m.playerIndex].megamushroom = true
+                gPlayerSyncTable[m.playerIndex].powerup_timer = 300
+                gStatePowerupExtras.megaMushroom.scale = 2
+
+                megamushroom = 1
+
+                RandomEvent = 0
+
+                count_with_function_at_end(300, reset_music_and_turn_off_low_gravity)
+                rtd_stall(150)
+            end
+            if (RandomEvent) == 36 then --Template for a new event in case you (yes, YOU!) wanted to add something into the mix. Disabled by default. See the notes below!
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled a new event!", 1)
-                --Put all your code here! 
+                --Put all your code here!
                 --Be sure to also update the RTD Picker on line 260 to include 33 (or however many more you add) events!
                 RandomEvent = 0
             end
@@ -796,11 +776,11 @@ end
 function clusterbombs(m)
     local m = gMarioStates[0]
     if (clusterbomb) == 1 then --starts the timer for the jumping and ground pound
-        clusterbombtimer2 = clusterbombtimer2 + 1 
+        clusterbombtimer2 = clusterbombtimer2 + 1
     end
 
     if (clusterbombtimer2) == 1 then --One count in, it initiates a triple jump.
-    set_mario_action(gMarioStates[0], ACT_TRIPLE_JUMP,0)  
+    set_mario_action(gMarioStates[0], ACT_TRIPLE_JUMP,0)
     end
 
     if (clusterbombtimer2) == 10 then --10 frames later, this initiates the ground pound.
@@ -958,7 +938,7 @@ function mushroom_surprise(unloadedObj)
         --1UP mushroom behaviors:
         --1 = Normal
         --2 = GREEN DEMON (Death)
-        --3 = Cheeseburger (health refill)    
+        --3 = Cheeseburger (health refill)
 
         if (mushroombehavior) == 1 then --1UP
         end
@@ -1020,7 +1000,7 @@ function hook_update()
         m.pos.y = m.floorHeight
         m.pos.y = m.pos.y + 30000
     end
-    if s.enderpearl then --Teleport Mario to a random spot within 40,000 units. 
+    if s.enderpearl then --Teleport Mario to a random spot within 40,000 units.
         if vec3f_dist(curpos, m.pos) < 1000 then
                 marx = math.random(-19500,19500)
                 mary = math.random(0,4400)
@@ -1065,6 +1045,7 @@ end
 
 function mario_update(m)
     local s = gStateExtras[m.playerIndex]
+    local st = gPlayerSyncTable[m.playerIndex]
 
     --Invisible
     if s.invisible > 0 and s.invisible < 240 then
@@ -1135,7 +1116,7 @@ function mario_update(m)
     if (mariofuse) == 1 then
         if m.playerIndex ~= 0 then return end
         mariotouchingwater = m.pos.y <= m.waterLevel
-        
+
         if gGlobalSyncTable.floodenabled then
             floodwater = obj_get_first_with_behavior_id(bhvFloodWater)
             if floodwater ~= nil then
@@ -1146,7 +1127,7 @@ function mario_update(m)
         else
             mariotouchingfloodwater = false
         end
-        
+
         if mariotouchingwater or mariotouchingfloodwater then
             spawn_mist_particles()
             spawn_mist_particles()
@@ -1155,8 +1136,6 @@ function mario_update(m)
             spawn_mist_particles()
             djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " successfully put out the fuse!", 1)
             fusecounter = 0
-            eightsecondtimer = 0
-            eightsecondcount = 0
             stop_all_samples()
             network_play(sCooloff, m.pos, 1, m.playerIndex)
             stop_secondary_music(0)
@@ -1177,9 +1156,66 @@ function mario_update(m)
         end
     end
 
+    -- Mega Mushroom
+    if megamushroom == 1 and m.playerIndex == 0 then
+        gStatePowerupExtras.megaMushroom.curScale = approach_f32_asymptotic(gStatePowerupExtras.megaMushroom.curScale, gStatePowerupExtras.megaMushroom.scale, 0.1)
 
+        gPlayerSyncTable[0].synced_size = gStatePowerupExtras.megaMushroom.curScale
 
+        if m.action == ACT_JUMP then
+            m.action = ACT_DOUBLE_JUMP
+        end
 
+        m.marioObj.hitboxHeight = 256
+        m.marioObj.hitboxRadius = 64
+
+        m.marioObj.hurtboxHeight = 256
+        m.marioObj.hurtboxRadius = 64
+
+        m.squishTimer = 0
+
+        if m.action == ACT_WALKING then
+            m.faceAngle.y = approach_s16_symmetric(m.faceAngle.y, m.intendedYaw, 1)
+        else
+            m.faceAngle.y = approach_s16_symmetric(m.faceAngle.y, m.intendedYaw, 1024)
+        end
+
+        m.hurtCounter = 0
+        m.health = 2176
+
+        if m.action == ACT_WALKING then
+            m.forwardVel = clampf(m.forwardVel * 1.35, 0, 55)
+        end
+
+        if gPlayerSyncTable[0].powerup_timer ~= 0 then
+            gPlayerSyncTable[0].powerup_timer = gPlayerSyncTable[0].powerup_timer - 1
+        end
+
+        if gPlayerSyncTable[0].powerup_timer <= 15 then
+            gStatePowerupExtras.megaMushroom.scale = 1
+
+            if gPlayerSyncTable[0].powerup_timer == 0 then
+                gPlayerSyncTable[0].megamushroom = false
+                megamushroom = 0
+            end
+        end
+    end
+
+    if st.megamushroom then
+        obj_scale(m.marioObj, st.synced_size)
+
+        if not
+        (m.action == ACT_BBH_ENTER_SPIN or
+        m.action == ACT_BBH_ENTER_JUMP or
+        m.action == ACT_HOLD_IDLE) and
+        (m.action & ACT_FLAG_AIR) == 0 and
+        (m.action & ACT_FLAG_IDLE) == 0 then
+            if m.peakHeight >= 100 and m.vel.y <= -10 then
+                play_sound(SOUND_GENERAL_BIG_POUND, m.pos)
+                spawn_non_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_NONE, m.pos.x, m.pos.y, m.pos.z, nil)
+            end
+        end
+    end
 end
 
 function hud_timers()
@@ -1273,7 +1309,7 @@ function hud_timers()
         if (fusecounter) > 0 and (fusecounter) < 30 then
             djui_hud_set_resolution(RESOLUTION_N64);
             djui_hud_render_texture(texexplosion, 20, 33, .1, .1)
-            
+
         end
         if (fusecounter) >= 30 and (fusecounter) < 60 then
             djui_hud_set_resolution(RESOLUTION_N64);
@@ -1308,8 +1344,6 @@ function hud_timers()
             spawn_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, m.pos.x, m.pos.y, m.pos.z, nil)
             m.health = 0xff
             stop_secondary_music(0)
-            eightsecondtimer = 0
-            eightsecondcount = 0
             stream_stop_all()
             --set_background_music(0, get_current_background_music(), 0)
             mariofuse = 0
@@ -1334,8 +1368,6 @@ function hud_timers()
     if (speedcounter) == 240 then
         marioboostrtd = 0
         speedcounter = 0
-        eightsecondtimer = 0
-        eightsecondcount = 0
         stream_stop_all()
         set_background_music(0, get_current_background_music(), 0)
     end
@@ -1369,7 +1401,7 @@ function hud_timers()
             RandomEvent = 0
             angrymario = 0
             --set_mario_action(m, MARIO_CAPS, 0)
-            
+
         end
     end
 
@@ -1397,25 +1429,20 @@ end
 --------Hooks--------
 ---
 
---hook_event(HOOK_MARIO_UPDATE, mario_update)
---hook_event(HOOK_ON_HUD_RENDER, hud_timers)
---hook_event(HOOK_UPDATE, hook_update)
---
---hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
---hook_event(HOOK_ON_WARP, on_warp)
---hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
---hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
---hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
---hook_event(HOOK_MARIO_UPDATE, rtd)
---hook_event(HOOK_ON_HUD_RENDER, fivesecondcountdown)
---hook_event(HOOK_ON_HUD_RENDER, eightsecondcountdown)
---hook_event(HOOK_ON_HUD_RENDER, mariobrokenleg)
---hook_event(HOOK_ON_HUD_RENDER, randomizehealth)
---hook_event(HOOK_ON_HUD_RENDER, on_hud_render)
---hook_event(HOOK_ON_HUD_RENDER, RTDclock)
---hook_event(HOOK_ON_HUD_RENDER, moonclock)
---hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
---
---hook_event(HOOK_CHARACTER_SOUND, function(m, sound)
---    if sound == CHAR_SOUND_PUNCH_HOO and mariospin ~= 0 then return 0 end
---end)
+hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
+hook_event(HOOK_ON_WARP, on_warp)
+hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
+hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
+hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
+hook_event(HOOK_MARIO_UPDATE, rtd)
+hook_event(HOOK_ON_HUD_RENDER, display_countdown)
+hook_event(HOOK_ON_HUD_RENDER, mariobrokenleg)
+hook_event(HOOK_ON_HUD_RENDER, randomizehealth)
+hook_event(HOOK_ON_HUD_RENDER, on_hud_render)
+hook_event(HOOK_ON_HUD_RENDER, RTDclock)
+hook_event(HOOK_ON_HUD_RENDER, moonclock)
+hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
+
+hook_event(HOOK_CHARACTER_SOUND, function(m, sound)
+    if sound == CHAR_SOUND_PUNCH_HOO and mariospin ~= 0 then return 0 end
+end)
