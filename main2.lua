@@ -19,6 +19,7 @@ EVENT_MUSHROOM = 1 << 15
 EVENT_LOW_GRAVITY = 1 << 16
 EVENT_ENEMY_APOCALYPSE = 1 << 17
 EVENT_INVISIBLE_PLAYER = 1 << 18
+EVENT_MEGA_MUSHROOM = 1 << 19
 
 HOOK_MARIO_UPDATE_LOCAL = 1
 HOOK_MARIO_UPDATE_GLOBAL = 2
@@ -34,6 +35,8 @@ local np = gNetworkPlayers
 for i = 0, MAX_PLAYERS - 1 do
     ps[i].event = 0x0
     ps[i].eventTimers = {}
+
+    ps[i].megamushroomscale = 1 -- PS: If you see this blocky, and you know a way, could i remove this?
 end
 
 local function event_random_health(m, timer)
@@ -498,6 +501,79 @@ local function event_invisible_player(m, timer)
     obj_scale(m.marioObj, 0)
 end
 
+local function event_on_mega_mushroom(m, timer)
+    djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " became HUGE!!!", 1)
+    fadeout_music(0)
+    play_secondary_music(0,0,0,0)
+    network_play(sGrow, m.pos, 1, m.playerIndex)
+    stream_play(mega)
+    gStatePowerupExtras.megaMushroom.scale = 2
+end
+
+local function event_mega_mushroom(m, timer)
+    st = gPlayerSyncTable[m.playerIndex]
+
+    if timer == 10 * 30 then
+        stop_secondary_music(0)
+        set_background_music(0, get_current_background_music(), 0)
+    end
+
+    if m.playerIndex == 0 then
+        gStatePowerupExtras.megaMushroom.curScale = approach_f32_asymptotic(gStatePowerupExtras.megaMushroom.curScale, gStatePowerupExtras.megaMushroom.scale, 0.1)
+
+        gPlayerSyncTable[0].synced_size = gStatePowerupExtras.megaMushroom.curScale
+
+        if m.action == ACT_JUMP then
+            m.action = ACT_DOUBLE_JUMP
+        end
+
+        m.marioObj.hitboxHeight = 256
+        m.marioObj.hitboxRadius = 64
+
+        m.marioObj.hurtboxHeight = 256
+        m.marioObj.hurtboxRadius = 64
+
+        m.squishTimer = 0
+
+        if m.action == ACT_WALKING then
+            m.faceAngle.y = approach_s16_symmetric(m.faceAngle.y, m.intendedYaw, 1)
+        else
+            m.faceAngle.y = approach_s16_symmetric(m.faceAngle.y, m.intendedYaw, 1024)
+        end
+
+        m.hurtCounter = 0
+        m.health = 2176
+
+        if m.action == ACT_WALKING then
+            m.forwardVel = clampf(m.forwardVel * 1.35, 0, 55)
+        end
+
+        if timer <= 15 then
+            gStatePowerupExtras.megaMushroom.scale = 1
+        end
+    else
+        if obj_check_hitbox_overlap(m.marioObj, gMarioStates[0].marioObj) then
+            m.invincTimer = 60
+
+            set_mario_action(gMarioStates[0], ACT_SQUISHED, 0)
+        end
+    end
+
+    if not
+    (m.action == ACT_BBH_ENTER_SPIN or
+    m.action == ACT_BBH_ENTER_JUMP or
+    m.action == ACT_HOLD_IDLE) and
+    (m.action & ACT_FLAG_AIR) == 0 and
+    (m.action & ACT_FLAG_IDLE) == 0 then
+        if m.peakHeight >= 100 and m.vel.y <= -10 then
+            play_sound(SOUND_GENERAL_BIG_POUND, m.pos)
+            spawn_non_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_NONE, m.pos.x, m.pos.y, m.pos.z, nil)
+        end
+    end
+
+    obj_scale(m.marioObj, st.synced_size)
+end
+
 local sEventTable = {
    {id = EVENT_RANDOM_HEALTH, func = event_random_health, timerMax = 3 * 30, hook = HOOK_MARIO_UPDATE_LOCAL},
 
@@ -550,6 +626,9 @@ local sEventTable = {
    {id = EVENT_ENEMY_APOCALYPSE, func = event_on_enemy_apocalypse_roll, timerMax = 0, hook = HOOK_ON_DICE_ROLL},
 
    {id = EVENT_INVISIBLE_PLAYER, func = event_invisible_player, timerMax = 8 * 30, hook = HOOK_MARIO_UPDATE_GLOBAL},
+
+   {id = EVENT_MEGA_MUSHROOM, func = event_on_mega_mushroom, timerMax = 0, hook = HOOK_ON_DICE_ROLL},
+   {id = EVENT_MEGA_MUSHROOM, func = event_mega_mushroom, timerMax = 10 * 30, hook = HOOK_MARIO_UPDATE_LOCAL, timerOwner = HOOK_MARIO_UPDATE_LOCAL},
 }
 
 local eventCount = {}
