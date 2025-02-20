@@ -45,26 +45,26 @@ gGlobalSyncTable.autoroll = false
 
 --------locals--------
 local network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math_floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math_random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence = network_player_connected_count,init_single_mario,warp_to_level,play_sound,network_is_server,network_get_player_text_color_string,djui_chat_message_create,disable_time_stop,network_player_set_description,set_mario_action,obj_get_first_with_behavior_id,obj_check_hitbox_overlap,spawn_mist_particles,vec3f_dist,play_race_fanfare,play_music,djui_hud_set_resolution,djui_hud_get_screen_height,djui_hud_get_screen_width,djui_hud_render_rect,djui_hud_set_font,djui_hud_world_pos_to_screen_pos,clampf,math.floor,djui_hud_measure_text,djui_hud_print_text,hud_render_power_meter,hud_get_value,save_file_erase_current_backup_save,save_file_set_flags,save_file_set_using_backup_slot,find_floor_height,spawn_non_sync_object,set_environment_region,vec3f_set,vec3f_copy,math.random,set_ttc_speed_setting,get_level_name,hud_hide,smlua_text_utils_secret_star_replace,smlua_audio_utils_replace_sequence
-local texInfo = get_texture_info('rtd')
-local texexplosion = get_texture_info('fuselit')
-local texexplosion2 = get_texture_info('touchwater')
-local texlowgravity = get_texture_info('lowgravity')
-local texspeed = get_texture_info('speed')
-local tex8 = get_texture_info('8')
-local tex7 = get_texture_info('7')
-local tex6 = get_texture_info('6')
-local tex5 = get_texture_info('5')
-local tex4 = get_texture_info('4')
-local tex3 = get_texture_info('3')
-local tex2 = get_texture_info('2')
-local tex1 = get_texture_info('1')
-local texlightning = get_texture_info('lightning')
-local texbrokenleg = get_texture_info('brokenleg')
-local texmoonjump = get_texture_info('moonjump')
-local textroll = get_texture_info('troll')
-local textrollhud = get_texture_info('trollhud')
-local texsleep = get_texture_info('sleep')
-local texwelcome = get_texture_info('welcome')
+texInfo = get_texture_info('rtd')
+texexplosion = get_texture_info('fuselit')
+texexplosion2 = get_texture_info('touchwater')
+texlowgravity = get_texture_info('lowgravity')
+texspeed = get_texture_info('speed')
+tex8 = get_texture_info('8')
+tex7 = get_texture_info('7')
+tex6 = get_texture_info('6')
+tex5 = get_texture_info('5')
+tex4 = get_texture_info('4')
+tex3 = get_texture_info('3')
+tex2 = get_texture_info('2')
+tex1 = get_texture_info('1')
+texlightning = get_texture_info('lightning')
+texbrokenleg = get_texture_info('brokenleg')
+texmoonjump = get_texture_info('moonjump')
+textroll = get_texture_info('troll')
+textrollhud = get_texture_info('trollhud')
+texsleep = get_texture_info('sleep')
+texwelcome = get_texture_info('welcome')
 
 
 --------functions--------
@@ -804,7 +804,7 @@ function clusterbombs(m)
     end
 
     if (clusterbombtimer2) == 10 then --10 frames later, this initiates the ground pound.
-        set_mario_action(gMarioStates[0], ACT_GROUND_POUND,0)        
+        set_mario_action(gMarioStates[0], ACT_GROUND_POUND,0)
     end
 
     if clusterbombtimer2 > 10 and gMarioStates[0].action == ACT_GROUND_POUND_LAND then --Ground pound triggers the "boom!" sound effect when animation plays. Checks CBtime2 to know the process is initiated.
@@ -977,8 +977,6 @@ function mushroom_surprise(unloadedObj)
             gMarioStates[0].numLives = gMarioStates[0].numLives - 1
             gMarioStates[0].health = gMarioStates[0].health + 256
         end
-
-
     end
 end
 
@@ -1398,25 +1396,26 @@ end
 
 --------Hooks--------
 ---
-hook_event(HOOK_MARIO_UPDATE, mario_update)
-hook_event(HOOK_ON_HUD_RENDER, hud_timers)
-hook_event(HOOK_UPDATE, hook_update)
 
-hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
-hook_event(HOOK_ON_WARP, on_warp)
-hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
-hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
-hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
-hook_event(HOOK_MARIO_UPDATE, rtd)
-hook_event(HOOK_ON_HUD_RENDER, fivesecondcountdown)
-hook_event(HOOK_ON_HUD_RENDER, eightsecondcountdown)
-hook_event(HOOK_ON_HUD_RENDER, mariobrokenleg)
-hook_event(HOOK_ON_HUD_RENDER, randomizehealth)
-hook_event(HOOK_ON_HUD_RENDER, on_hud_render)
-hook_event(HOOK_ON_HUD_RENDER, RTDclock)
-hook_event(HOOK_ON_HUD_RENDER, moonclock)
-hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
-
-hook_event(HOOK_CHARACTER_SOUND, function(m, sound)
-    if sound == CHAR_SOUND_PUNCH_HOO and mariospin ~= 0 then return 0 end
-end)
+--hook_event(HOOK_MARIO_UPDATE, mario_update)
+--hook_event(HOOK_ON_HUD_RENDER, hud_timers)
+--hook_event(HOOK_UPDATE, hook_update)
+--
+--hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
+--hook_event(HOOK_ON_WARP, on_warp)
+--hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
+--hook_behavior(id_bhvCannonBarrel, OBJ_LIST_DEFAULT, false, nil, bhv_custom_cannon_loop, "bhvCannonBarrel")
+--hook_event(HOOK_ON_OBJECT_UNLOAD, findcap)
+--hook_event(HOOK_MARIO_UPDATE, rtd)
+--hook_event(HOOK_ON_HUD_RENDER, fivesecondcountdown)
+--hook_event(HOOK_ON_HUD_RENDER, eightsecondcountdown)
+--hook_event(HOOK_ON_HUD_RENDER, mariobrokenleg)
+--hook_event(HOOK_ON_HUD_RENDER, randomizehealth)
+--hook_event(HOOK_ON_HUD_RENDER, on_hud_render)
+--hook_event(HOOK_ON_HUD_RENDER, RTDclock)
+--hook_event(HOOK_ON_HUD_RENDER, moonclock)
+--hook_event(HOOK_ON_OBJECT_UNLOAD, mushroom_surprise)
+--
+--hook_event(HOOK_CHARACTER_SOUND, function(m, sound)
+--    if sound == CHAR_SOUND_PUNCH_HOO and mariospin ~= 0 then return 0 end
+--end)
