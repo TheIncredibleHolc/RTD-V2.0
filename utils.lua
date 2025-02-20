@@ -47,6 +47,13 @@ for i = 0, MAX_PLAYERS-1 do
 	}
 end
 
+gStatePowerupExtras = {
+	megaMushroom = {
+        curScale = 1,
+        scale = 1
+    }
+}
+
 rerolling = false
 dead = false
 --RTDnotifications = true
@@ -61,6 +68,7 @@ function stream_stop_all()
 	audio_stream_stop(metalcap)
 	audio_stream_stop(dance)
 	audio_stream_stop(gold)
+	audio_stream_stop(mega)
 	currentlyPlaying = nil
 end
 
@@ -166,8 +174,8 @@ gSamples = {
 	audio_sample_load("ring_collect.ogg"),
 	audio_sample_load("ringdrop.ogg"),
 	audio_sample_load("pin.ogg"),
-	audio_sample_load("explosion.ogg")
-
+	audio_sample_load("explosion.ogg"),
+	audio_sample_load("megamushroomgrow.ogg")
 }
 
 sBoneBreak = 1
@@ -212,12 +220,14 @@ sRingCollect = 39
 sRingDrop = 40
 sGrenadePin = 41
 sExplosion = 42
+sGrow = 43
 
 --Streams
 moon = audio_stream_load("moon.ogg")
 metalcap = audio_stream_load("metalcap.ogg")
 dance = audio_stream_load("mariodance.ogg")
 gold = audio_stream_load("betterthangold.ogg")
+mega = audio_stream_load("megamushroom.ogg")
 
 --Custom Models
 E_MODEL_GRENADE = smlua_model_util_get_id("grenade_geo")
@@ -290,9 +300,8 @@ function act_invisible(m)
 end
 hook_mario_action(ACT_INVISIBLE, act_invisible)
 
-
-
 ACT_RAGDOLL = allocate_mario_action(ACT_GROUP_CUTSCENE|ACT_FLAG_STATIONARY|ACT_FLAG_INTANGIBLE)
+
 function act_ragdoll(m)
     local s = gStateExtras[0]
     local stepResult = perform_air_step(m, 0)
@@ -317,9 +326,11 @@ function act_ragdoll(m)
     vec3s_add(m.faceAngle, m.angleVel)
     vec3s_copy(m.marioObj.header.gfx.angle, m.faceAngle)
 end
+
 hook_mario_action(ACT_RAGDOLL, act_ragdoll)
 
 ACT_SHART = allocate_mario_action(ACT_FLAG_INTANGIBLE|ACT_FLAG_INVULNERABLE|ACT_GROUP_CUTSCENE)
+
 function act_shart(m)
 	local s = gStateExtras[m.playerIndex]
 	obj_update_gfx_pos_and_angle(m.marioObj)
@@ -351,5 +362,16 @@ function act_shart(m)
 		set_mario_action(m, ACT_IDLE, 0)
 	end
 end
+
 hook_mario_action(ACT_SHART, act_shart)
 
+function rtd_stall(t) -- Stalls the RTD Timer, useful for events which last an amount of time
+	if type(t) == 'number' then
+		rtdstall = math.floor(t)
+	end
+end
+
+function count_with_function_at_end(t, func)
+	counter_stuff.display_number_time = t
+	counter_stuff.counter_func = func
+end
