@@ -44,6 +44,7 @@ for i = 0, MAX_PLAYERS-1 do
 		invisible = 0,
 		sharting = false,
 		fovStretch = false,
+		scopeZoom = false
 	}
 end
 
@@ -175,7 +176,10 @@ gSamples = {
 	audio_sample_load("ringdrop.ogg"),
 	audio_sample_load("pin.ogg"),
 	audio_sample_load("explosion.ogg"),
-	audio_sample_load("megamushroomgrow.ogg")
+	audio_sample_load("megamushroomgrow.ogg"),
+	audio_sample_load("scoped.ogg"),
+	audio_sample_load("nuclearbomb.ogg")
+
 }
 
 sBoneBreak = 1
@@ -221,6 +225,8 @@ sRingDrop = 40
 sGrenadePin = 41
 sExplosion = 42
 sGrow = 43
+sScoped = 44
+sBomb = 45
 
 --Streams
 moon = audio_stream_load("moon.ogg")

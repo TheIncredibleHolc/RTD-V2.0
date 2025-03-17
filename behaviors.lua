@@ -130,17 +130,6 @@ function gun_sniper_loop(o)
 
     
     if m.heldObj == o then
-        --[[
-        if m.controller.buttonDown & L_TRIG == 0 then
-            marioAngle = m.faceAngle.y
-        end
-
-        if m.controller.buttonDown & L_TRIG ~= 0 then
-            m.forwardVel = 0
-            m.faceAngle.y = marioAngle
-            m.intendedYaw = marioAngle
-            --djui_chat_message_create("strafing")
-        end]]
 
         if m.controller.buttonPressed & Y_BUTTON ~= 0 then
             local offset = 0
@@ -159,9 +148,16 @@ function gun_sniper_loop(o)
             o.oBulletPosY = m.pos.y + offset
             o.oBulletPosZ = m.pos.z
             o.oGunAngle = m.faceAngle.y
+            local nm = nearest_mario_state_to_object(o)
             spawn_sync_object(id_bhvMistCircParticleSpawner, E_MODEL_MIST, o.oBulletPosX, o.oBulletPosY, o.oBulletPosZ, nil)
-            spawn_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, o.oBulletPosX, o.oBulletPosY, o.oBulletPosZ, function(tracer) tracer.oFaceAngleYaw = o.oGunAngle end)
-            spawn_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, o.oBulletPosX, o.oBulletPosY + 20, o.oBulletPosZ, function(bullet) bullet.oFaceAngleYaw = o.oGunAngle end)
+            spawn_sync_object(id_bhvSniperSmoke, E_MODEL_GUN_SNIPER_SMOKE, o.oBulletPosX, o.oBulletPosY, o.oBulletPosZ, function(tracer) 
+                tracer.oFaceAngleYaw = nm.faceAngle.y 
+                tracer.oMoveAngleYaw = tracer.oFaceAngleYaw
+                end)
+            spawn_sync_object(id_bhvSniperBullet, E_MODEL_SNIPER_BULLET, o.oBulletPosX, o.oBulletPosY + 20, o.oBulletPosZ, function(bullet) 
+                bullet.oFaceAngleYaw = o.oGunAngle 
+                bullet.oMoveAngleYaw = bullet.oFaceAngleYaw
+                end)
             o.oAmmo = o.oAmmo - 1
             network_play(sGunshot, m.pos, 0.6, m.playerIndex)
             o.oAction = 2
@@ -200,7 +196,8 @@ end
 function sniper_smoke_init(o)
     o.oFlags = OBJ_FLAG_ACTIVE_FROM_AFAR | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE | OBJ_FLAG_MOVE_XZ_USING_FVEL
     o.header.gfx.skipInViewCheck = true
-    o.oOpacity = 110
+    --o.oOpacity = 110
+    o.oOpacity = 80
     oTracerScale = 0.1
     cur_obj_disable_rendering()
 end
@@ -412,7 +409,7 @@ function grenade_loop(o)
         end
     end
 
-    if m.heldObj == o and m.intendedMag ~= 0 and m.forwardVel < 35 and (m.action & ACT_FLAG_AIR) == 0 then
+    if m.heldObj == o and m.intendedMag ~= 0 and m.forwardVel < 35 and (m.action & ACT_FLAG_AIR) == 0 and m.controller.buttonDown & L_TRIG == 0 then
         m.forwardVel = m.forwardVel + 1.2
     end
 
@@ -478,9 +475,9 @@ function grenade_loop(o)
                 set_mario_action(m, ACT_THROWING, 0)
             end
             if o.oThrowDistance == 1 then
-                cur_obj_move_after_thrown_or_dropped(18, 35)
+                cur_obj_move_after_thrown_or_dropped(18, 45)
             else
-                cur_obj_move_after_thrown_or_dropped(60, 40)
+                cur_obj_move_after_thrown_or_dropped(40, 40)
             end
             o.oPosY = o.oPosY + 50
             o.oAction = 3
@@ -491,6 +488,10 @@ function grenade_loop(o)
     end
 
     if o.oAction == 3 then --Grenade has been thrown and will explode on impact.
+        if dist_between_objects(o, m.marioObj) < 2000 then
+            approach_vec3f_asymptotic(gLakituState.focus, o.header.gfx.pos, 3,3,3)
+            approach_vec3f_asymptotic(gLakituState.curFocus, o.header.gfx.pos, 3,3,3)
+        end
         cur_obj_enable_rendering_and_become_tangible(o)
         if o.oPosY > o.oFloorHeight then
             o.oFaceAnglePitch = o.oFaceAnglePitch + 2048
@@ -523,3 +524,70 @@ function grenade_loop(o)
 end
 
 id_bhvGrenade = hook_behavior(nil, OBJ_LIST_GENACTOR, false, grenade_init, grenade_loop)
+----------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------
+--Nuclear Bomb
+
+function bomb_init(o)
+    o.oFlags = OBJ_FLAG_ACTIVE_FROM_AFAR | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
+    o.header.gfx.skipInViewCheck = true
+end
+
+function bomb_loop(o)
+    local m = gMarioStates[0]
+    if o.oTimer == 1 then
+        local_play(sBomb, m.pos, 1)
+        seq_player_fade_out(0, 60)
+    end
+    if o.oTimer == 85 then
+        play_transition(WARP_TRANSITION_FADE_FROM_COLOR, 10, 255, 0, 0)
+        set_override_skybox(BACKGROUND_FLAMING_SKY)
+        set_lighting_color(0, 255)
+        set_lighting_color(1, 150)
+        set_lighting_color(2, 150)
+        set_lighting_dir(1, -128)
+        set_vertex_color(0, 255)
+        set_vertex_color(1, 150)
+        set_vertex_color(2, 150)
+        set_fog_color(0, 255)
+        set_fog_color(1, 150)
+        set_fog_color(2, 150)
+        nuke = true
+    end
+    if o.oTimer > 85 and o.oTimer < 190 then
+        cur_obj_shake_screen(SHAKE_POS_LARGE)
+        set_camera_shake_from_hit(SHAKE_POS_LARGE)
+    end
+    if o.oTimer == 190 then
+        local behaviorsToDestroy = {id_bhvThwomp, id_bhvThwomp2, id_bhvWhompKingBoss, id_bhvWhompKingBoss, id_bhvWaterBombCannon, id_bhvTree, id_bhvWoodenPost, id_bhvPlatformOnTrack, id_bhvBowlingBall, id_bhvBobBowlingBallSpawner, id_bhvPitBowlingBall, id_bhvMessagePanel, id_bhvGoomba, id_bhvBobomb, id_bhvBobombBuddy, id_bhvBobombBuddyOpensCannon, id_bhvChainChomp, id_bhvKingBobomb, id_bhvKoopa, id_bhvSpindrift, id_bhvPenguinBaby, id_bhvSmallPenguin, id_bhvBird, id_bhvButterfly, id_bhvTripletButterfly}
+
+        for _, behavior in ipairs(behaviorsToDestroy) do
+            local objectToDestroy = obj_get_first_with_behavior_id(behavior)
+            while objectToDestroy ~= nil do
+                spawn_non_sync_object(id_bhvExplosion, E_MODEL_EXPLOSION, objectToDestroy.oPosX, objectToDestroy.oPosY + 100, objectToDestroy.oPosZ, function (exp)
+                    obj_scale(exp, 10)
+                end)
+                spawn_non_sync_object(id_bhvFlame, E_MODEL_RED_FLAME, objectToDestroy.oPosX, objectToDestroy.oPosY, objectToDestroy.oPosZ, function (flame)
+                    obj_scale(flame, math.random(1,3))
+                end)
+                obj_mark_for_deletion(objectToDestroy)
+                objectToDestroy = obj_get_next_with_same_behavior_id(objectToDestroy)
+            end
+        end
+
+        local_play(sExplosion, m.pos, 1)
+        cur_obj_shake_screen(SHAKE_POS_LARGE)
+        spawn_non_sync_object(id_bhvBowserBombExplosion, E_MODEL_BOWSER_FLAMES, o.oPosX, o.oPosY, o.oPosZ, function (explosion) obj_scale(explosion, 2) end)
+        play_character_sound(m, CHAR_SOUND_ATTACKED)
+        m.pos.y = m.pos.y + 4
+        m.vel.y = 400
+        set_mario_action(m, ACT_RAGDOLL, 0)
+        m.health = m.health - 1800
+    end
+    if o.oTimer == 260 then
+        play_music(0, SEQ_LEVEL_HOT, 0)
+        obj_mark_for_deletion(o)
+    end
+end
+
+id_bhvNuclearBomb = hook_behavior(nil, OBJ_LIST_GENACTOR, false, bomb_init, bomb_loop)

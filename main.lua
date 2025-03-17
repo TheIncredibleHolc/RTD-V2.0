@@ -55,6 +55,7 @@ local textroll = get_texture_info('troll')
 local textrollhud = get_texture_info('trollhud')
 local texsleep = get_texture_info('sleep')
 local texwelcome = get_texture_info('welcome')
+local texcrosshair = get_texture_info('crosshair')
 
 counter_stuff = {
     display_number_time = 0,
@@ -101,6 +102,27 @@ function moonclock (m)
         moontimer = moontimer - 1
     end
 end
+
+
+local sensitivity = 0.1
+local prevAngle = 0
+function aim_assist(m)
+    if m.playerIndex ~= 0 then
+        return
+    end
+    if m.heldObj ~= nil then
+        if obj_has_behavior_id(m.heldObj, id_bhvSniper) and m.controller.buttonDown & L_TRIG ~= 0 then
+            --gFirstPersonCamera.centerL = false
+            local diff = abs_angle_diff(prevAngle, m.faceAngle.y)
+            m.faceAngle.y = approach_s16_symmetric(prevAngle, m.faceAngle.y, diff * sensitivity)
+        end
+
+    end
+    prevAngle = m.faceAngle.y
+
+end
+
+hook_event(HOOK_MARIO_UPDATE, aim_assist)
 
 function display_countdown()
     if counter_stuff.display_number_time ~= 0 then
@@ -212,7 +234,7 @@ function rtd(m)
         if (rtdtimer) <= 0 and not dead then
             if m.playerIndex ~= 0 then return end
             rerolling = false
-            RandomEvent = 35
+            RandomEvent = math.random(1, 36)
             if not gGlobalSyncTable.autoroll then
                 rtdtimer = 30 * 10 --10 seconds
             else
@@ -732,10 +754,20 @@ function rtd(m)
                 count_with_function_at_end(300, reset_music_and_turn_off_low_gravity)
                 rtd_stall(150)
             end
-            if (RandomEvent) == 36 then --Template for a new event in case you (yes, YOU!) wanted to add something into the mix. Disabled by default. See the notes below!
+            if (RandomEvent) == 36 then --NUKE
+                local nuke = math.random(1,10)
+                if nuke == 10 then
+                    djui_popup_create_global("!!! NUCLEAR LAUNCH DETECTED !!!", 1)
+                    spawn_sync_object(id_bhvNuclearBomb, E_MODEL_NONE, m.pos.x, m.pos.y, m.pos.z, nil)
+                else
+                    reroll()
+                end
+                RandomEvent = 0
+            end
+            if (RandomEvent) == 37 then --Template for a new event in case you (yes, YOU!) wanted to add something into the mix. Disabled by default. See the notes below!
                 djui_popup_create_global(tostring(gNetworkPlayers[m.playerIndex].name) .. " rolled a new event!", 1)
                 --Put all your code here!
-                --Be sure to also update the RTD Picker on line 260 to include 33 (or however many more you add) events!
+                --Be sure to also update the RTD Picker on line 237 to include math.random(1,37) or however many more events you add!
                 RandomEvent = 0
             end
         elseif gGlobalSyncTable.autoroll then
@@ -1041,6 +1073,22 @@ end
 
 function on_warp()
     stream_stop_all()
+
+    if nuke then
+    set_override_skybox(-1)
+    set_lighting_color(0, 255)
+    set_lighting_color(1, 255)
+    set_lighting_color(2, 255)
+    set_lighting_dir(1, 0)
+    set_vertex_color(0, 255)
+    set_vertex_color(1, 255)
+    set_vertex_color(2, 255)
+    set_fog_color(0, 255)
+    set_fog_color(1, 255)
+    set_fog_color(2, 255)
+    nuke = false
+    end
+
 end
 
 function mario_update(m)
@@ -1236,20 +1284,51 @@ function hud_timers()
         djui_hud_set_resolution(RESOLUTION_DJUI)
         djui_hud_set_filter(FILTER_LINEAR)
         djui_hud_render_texture(texwelcome, ((screenWidth-wh))/2, ((screenHeight-wh))/2, 1, 1)
-
     end
+
+
 
     --HUD Ammo counter
     if m.heldObj ~= nil then
+        local s = gStateExtras[0]
         if obj_has_behavior_id(m.heldObj, id_bhvSniper) then
             local ammoString = "Ammo: " .. tostring(m.heldObj.oAmmo)
             local measured_ammo = djui_hud_measure_text(ammoString)
             local centered_ammo_printX = (screenWidth/2) - ((measured_ammo) / 2)
             local centered_ammo_printY = (screenHeight)
+            local crosshair_width = texcrosshair.width
+            local crosshair_height = texcrosshair.height
             if m.heldObj.oAmmo > 0 then
                 djui_hud_print_text(ammoString, centered_ammo_printX, centered_ammo_printY - (centered_ammo_printY / 4), 1)
             end
+            if m.controller.buttonDown & L_TRIG ~= 0 then
+                if m.forwardVel > 15 then
+                    m.forwardVel = math.max(m.forwardVel - 2, 15)
+                end
+                set_first_person_enabled(true)
+                if not s.scopeZoom then
+                    gFirstPersonCamera.fov = 30
+                    sensitivity = 0.1
+                else
+                    gFirstPersonCamera.fov = 5
+                    sensitivity = 0.02
+                end
+                if m.controller.buttonPressed & R_TRIG ~= 0 then
+                    local_play(sScoped, m.pos, 1.5)
+                    if s.scopeZoom then
+                        s.scopeZoom = false
+                    else
+                        s.scopeZoom = true
+                    end
+                end
+                djui_hud_set_resolution(RESOLUTION_DJUI);
+                djui_hud_render_texture(texcrosshair, ((screenWidth-crosshair_width)/2), ((screenHeight-crosshair_height)/2), 1, 1)
+            else
+                set_first_person_enabled(false)
+            end
         end
+    else
+        set_first_person_enabled(false)
     end
 
     --Mario Sleeping
@@ -1414,12 +1493,6 @@ local function before_set_mario_action(m,action)
         if action == ACT_WAKING_UP then return ACT_SLEEPING end
     end
 
-    --[[
-    if mariospin == 1 then
-        if action == ACT_WALKING then set_mario_action(m, ACT_PUNCHING, 9) end
-    end
-    ]]
-
 end
 
 
@@ -1429,6 +1502,9 @@ end
 --------Hooks--------
 ---
 
+hook_event(HOOK_UPDATE, hook_update)
+hook_event(HOOK_MARIO_UPDATE, mario_update)
+hook_event(HOOK_ON_HUD_RENDER, hud_timers)
 hook_event(HOOK_BEFORE_SET_MARIO_ACTION, before_set_mario_action)
 hook_event(HOOK_ON_WARP, on_warp)
 hook_event(HOOK_ON_HUD_RENDER, clusterbombs)
