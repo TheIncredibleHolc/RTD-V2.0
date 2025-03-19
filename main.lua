@@ -1250,8 +1250,9 @@ function mario_update(m)
     end
 
     if st.megamushroom then
-        obj_scale(m.marioObj, st.synced_size)
-
+        if st.synced_size ~= nil then
+            obj_scale(m.marioObj, st.synced_size)
+        end
         if not
         (m.action == ACT_BBH_ENTER_SPIN or
         m.action == ACT_BBH_ENTER_JUMP or
